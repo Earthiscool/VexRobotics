@@ -1,0 +1,638 @@
+<!-- Save as vex-time-tracker-max.html and open in a modern browser -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>VEX Time Tracker — MAX</title>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<!-- jsPDF + html2canvas for PDF with charts -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<style>
+  :root{
+    --bg:#f4f6fb;--card:#fff;--muted:#666;--accent:#174ea6;
+  }
+  [data-theme="dark"]{
+    --bg:#0f1720;--card:#0b1220;--muted:#9aa6b2;--accent:#7fb0ff;
+  }
+  *{box-sizing:border-box}
+  body{font-family:Inter,system-ui,Arial; background:var(--bg); color:#07203a; margin:16px;}
+  header{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:12px}
+  h1{font-size:18px;margin:0}
+  .container{display:grid;grid-template-columns:1fr 420px;gap:14px;}
+  .card{background:var(--card);padding:12px;border-radius:8px;box-shadow:0 6px 18px rgba(2,6,23,0.06)}
+  label{font-size:13px;color:var(--muted)}
+  input[type="text"], input[type="number"], textarea, select {
+    width:100%; padding:8px;margin-top:6px;border:1px solid #ddd;border-radius:6px;background:transparent;
+    color:inherit;
+  }
+  .row{display:flex;gap:8px;align-items:center}
+  .small{width:90px}
+  .controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+  button{background:var(--accent);color:white;border:none;padding:8px 10px;border-radius:6px;cursor:pointer}
+  button.ghost{background:transparent;color:var(--accent);border:1px solid #d3d9ef}
+  .inputs{max-height:320px;overflow:auto;padding-right:6px}
+  .member{display:grid;grid-template-columns:1fr 160px 90px 36px;gap:8px;align-items:center;margin-bottom:8px}
+  .member input{margin:0}
+  .member .remove{background:#e74c3c;padding:6px;border-radius:6px;font-weight:bold}
+  canvas{max-width:100%;height:260px}
+  .summary{font-size:14px}
+  footer{margin-top:12px;color:var(--muted);font-size:13px}
+  .badge{display:inline-block;background:#eef3ff;color:#174ea6;padding:4px 8px;border-radius:999px;font-weight:600}
+  @media(max-width:980px){.container{grid-template-columns:1fr} canvas{height:180px}}
+  table{width:100%;border-collapse:collapse}
+  td,th{padding:6px;border-bottom:1px solid #eee;text-align:left;font-size:13px}
+  .warning{background:#fff3cd;padding:8px;border-radius:6px;margin:8px 0}
+  .danger{background:#ffeef0;padding:8px;border-radius:6px;margin:8px 0}
+  .flex-col{display:flex;flex-direction:column;gap:8px}
+  .hidden{display:none}
+</style>
+</head>
+<body data-theme="light">
+
+<header>
+  <div style="display:flex;align-items:center;gap:12px">
+    <h1>VEX Time Tracker — MAX</h1>
+    <span class="badge">120 min meetings</span>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center">
+    <button onclick="toggleTheme()">Toggle theme</button>
+    <button class="ghost" onclick="showHelp()">Help</button>
+  </div>
+</header>
+
+<div class="container">
+  <!-- LEFT: main flow -->
+  <main class="card">
+    <section aria-labelledby="meeting-setup">
+      <h2 id="meeting-setup">1) Meeting Setup</h2>
+      <div class="row" style="gap:12px;align-items:center;">
+        <div style="flex:1">
+          <label>Number of members</label>
+          <input id="numMembers" type="number" min="1" value="3" aria-label="Number of members">
+        </div>
+        <div style="width:140px">
+          <label>Preset / Template</label>
+          <select id="presetSelect"><option value="">— none —</option></select>
+        </div>
+        <div style="width:120px">
+          <label>Load</label>
+          <button type="button" onclick="applyPreset()">Apply</button>
+        </div>
+      </div>
+
+      <div style="margin-top:10px" class="inputs" id="inputsArea" aria-live="polite"></div>
+
+      <div class="controls" style="margin-top:6px">
+        <button onclick="addMember()">+ Add member</button>
+        <button onclick="generateInputsFromCount()">Generate</button>
+        <button onclick="savePreset()">Save preset</button>
+        <button onclick="exportJSON()">Backup JSON</button>
+        <button onclick="importJSON()">Restore JSON</button>
+      </div>
+
+      <div style="margin-top:10px">
+        <label>Meeting notes (will save):</label>
+        <textarea id="notes" rows="3" placeholder="Today we worked on autonomous..."></textarea>
+      </div>
+
+      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+        <button onclick="generateAll()">Generate charts & summary</button>
+        <button onclick="saveMeeting()">Save meeting</button>
+        <button onclick="loadSavedList()">Load meetings</button>
+        <button onclick="exportCSV()">Export CSV</button>
+        <button onclick="importCSV()">Import CSV</button>
+        <button onclick="shareLink()">Share (copy state link)</button>
+      </div>
+
+      <div id="alerts"></div>
+    </section>
+
+    <section style="margin-top:12px" aria-labelledby="timer">
+      <h2 id="timer">2) Timer & Live Mode</h2>
+      <div class="row" style="gap:10px">
+        <label style="min-width:90px">Timer mode</label>
+        <select id="timerMode">
+          <option value="manual">Manual (start/stop)</option>
+          <option value="auto">Auto (advance through members)</option>
+        </select>
+        <button onclick="startTimer()">Start</button>
+        <button onclick="pauseTimer()">Pause</button>
+        <button onclick="resetTimer()">Reset</button>
+        <label style="min-width:110px">Notify</label>
+        <input type="checkbox" id="useNotifications">
+      </div>
+
+      <div style="margin-top:8px" id="timerUI" class="card hidden">
+        <div class="row">
+          <div style="flex:1">
+            <div id="currentTask" style="font-weight:700">—</div>
+            <div id="timeLeft" style="font-size:22px">00:00</div>
+          </div>
+          <div>
+            <label>Auto-advance on end</label><br>
+            <input type="checkbox" id="autoAdvance" checked>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section style="margin-top:12px">
+      <h2>3) Outputs</h2>
+      <div class="controls">
+        <button onclick="downloadChartsPNG()">Download Charts PNG</button>
+        <button onclick="downloadPDF()">Download PDF (charts embedded)</button>
+        <button onclick="printSchedule()">Print schedule</button>
+        <button onclick="exportSummaryTXT()">Export summary .txt</button>
+      </div>
+
+      <div id="scheduleSummary" class="card" style="margin-top:10px"></div>
+    </section>
+  </main>
+
+  <!-- RIGHT: charts, saved meetings, stats -->
+  <aside class="card" style="display:flex;flex-direction:column;gap:8px">
+    <div>
+      <h3>Charts</h3>
+      <canvas id="personPie"></canvas>
+      <canvas id="taskPie"></canvas>
+      <canvas id="barChart"></canvas>
+    </div>
+
+    <div>
+      <h3>Saved meetings</h3>
+      <div id="savedList" style="max-height:200px;overflow:auto"></div>
+      <div style="margin-top:8px;display:flex;gap:8px">
+        <button onclick="deleteAllMeetings()">Delete all</button>
+        <button onclick="undo()">Undo</button>
+        <button onclick="redo()">Redo</button>
+      </div>
+    </div>
+
+    <div>
+      <h3>Analytics</h3>
+      <div id="statsBox"></div>
+      <div style="margin-top:8px">
+        <button onclick="showFairAssign()">Fair random assignment</button>
+        <button onclick="toggleHeatmap()">Toggle times heatmap</button>
+      </div>
+      <div id="heatmap" class="card hidden" style="margin-top:8px"></div>
+    </div>
+  </aside>
+</div>
+
+<footer>
+  Built for VEX teams — works offline. Tip: export JSON as backup. Optional: connect to Firebase (comment block in code).
+</footer>
+
+<script>
+/* =========================
+   Globals and utilities
+   ========================= */
+const MEETINGS_KEY = 'vex_meetings_v2';
+const PRESETS_KEY = 'vex_presets_v2';
+const UNDO_STACK_KEY = 'vex_undo_v2';
+let personChart, taskChart, barChart;
+let undoStack = [], redoStack = [];
+let timer = null;
+let timerState = {index:0, secondsLeft:0, running:false, order:[]};
+const DEFAULT_COLORS = ['#3b82f6','#ef4444','#f97316','#10b981','#8b5cf6','#f43f5e','#06b6d4','#a78bfa','#f59e0b','#84cc16'];
+
+/* -------------------------
+   Helpers
+   ------------------------- */
+function qs(id){return document.getElementById(id)}
+function formatMs(s){ const m = Math.floor(s/60); const sec = s%60; return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}` }
+function randomId(){ return Math.random().toString(36).slice(2,9) }
+function pushUndo() { undoStack.push(JSON.stringify(getAllMeetings())); localStorage.setItem(UNDO_STACK_KEY, JSON.stringify(undoStack)); redoStack=[]; }
+function popUndo(stateJSON){ if(stateJSON){ localStorage.setItem(MEETINGS_KEY, stateJSON); loadSavedList(true); }}
+
+/* =========================
+   Input generation & presets
+   ========================= */
+function generateInputsFromCount(){
+  const n = parseInt(qs('numMembers').value) || 1;
+  const area = qs('inputsArea'); area.innerHTML = '';
+  for(let i=0;i<n;i++) addMemberRow(null,null,null);
+}
+function addMemberRow(name='',task='',minutes=''){
+  const idx = Date.now()+Math.floor(Math.random()*1000);
+  const div = document.createElement('div');
+  div.className = 'member';
+  div.id = 'm'+idx;
+  div.innerHTML = `
+    <input type="text" placeholder="Name" aria-label="name" value="${htmlEscape(name||'')}">
+    <input type="text" placeholder="Task" aria-label="task" value="${htmlEscape(task||'')}">
+    <input type="number" placeholder="Minutes" aria-label="minutes" min="0" max="120" class="small" value="${minutes||''}">
+    <button class="remove" title="remove" aria-label="remove">✕</button>
+  `;
+  div.querySelector('.remove').addEventListener('click',()=>div.remove());
+  qs('inputsArea').appendChild(div);
+}
+function addMember(){ addMemberRow(); qs('numMembers').value = qs('inputsArea').children.length; }
+
+/* =========================
+   Validation & collect
+   ========================= */
+function collectInputs(){
+  const rows = [...qs('inputsArea').children];
+  const items = rows.map(r=>{
+    const name = r.querySelector('input[aria-label="name"]').value.trim();
+    const task = r.querySelector('input[aria-label="task"]').value.trim();
+    const minutes = parseInt(r.querySelector('input[aria-label="minutes"]').value) || 0;
+    return {name:name||'Unknown',task:task||'Task',minutes};
+  });
+  return items;
+}
+function validateTotal(items){
+  const total = items.reduce((s,i)=>s+i.minutes,0);
+  return total===120 ? {ok:true,total} : {ok:false,total};
+}
+
+/* =========================
+   Charts & summary
+   ========================= */
+function generateAll(){
+  const items = collectInputs();
+  const v = validateTotal(items);
+  qs('alerts').innerHTML='';
+  if(!v.ok){ qs('alerts').innerHTML = `<div class="danger">Total must be 120 minutes. Currently ${v.total}.</div>`; return;}
+  // warnings
+  const warnings = items.filter(i=>i.minutes<10 || i.minutes>60).map(i=>`${i.name}: ${i.minutes} min`);
+  if(warnings.length) qs('alerts').innerHTML = `<div class="warning"><b>Warnings:</b><br>${warnings.join('<br>')}</div>`;
+
+  // Build person chart
+  const labels = items.map(i=>`${i.name} (${i.task})`);
+  const data = items.map(i=>i.minutes);
+  const colors = generateColors(labels.length);
+  if(personChart) personChart.destroy();
+  personChart = new Chart(qs('personPie'), {type:'pie',data:{labels,datasets:[{data,backgroundColor:colors}]}, options:{plugins:{legend:{position:'bottom'}}}});
+
+  // Task aggregation
+  const taskMap = {};
+  items.forEach(i=>taskMap[i.task] = (taskMap[i.task]||0)+i.minutes);
+  const tLabels = Object.keys(taskMap), tData = Object.values(taskMap);
+  if(taskChart) taskChart.destroy();
+  taskChart = new Chart(qs('taskPie'), {type:'pie',data:{labels:tLabels,datasets:[{data:tData,backgroundColor:generateColors(tLabels.length)}]}, options:{plugins:{legend:{position:'bottom'}}}});
+
+  // Bar chart minutes/person
+  if(barChart) barChart.destroy();
+  barChart = new Chart(qs('barChart'), {type:'bar',data:{labels:labels,datasets:[{label:'Minutes',data,backgroundColor:colors}]}, options:{indexAxis:'y',scales:{x:{beginAtZero:true}}}});
+
+  // Summary text
+  let html = `<div class="summary"><b>Schedule</b><br>`;
+  items.forEach(i=> html+= `<div>${i.name} → ${i.task} (${i.minutes} min)</div>`);
+  html += `<hr><i>Notes:</i><div>${htmlEscape(qs('notes').value)}</div></div>`;
+  qs('scheduleSummary').innerHTML = html;
+
+  // Timer prep
+  timerState.order = items.map((it,idx)=>({...it, idx}));
+  timerState.index = 0;
+  timerState.secondsLeft = timerState.order.length ? timerState.order[0].minutes*60 : 0;
+  updateTimerUI();
+}
+
+/* =========================
+   Save / load / edit meetings
+   ========================= */
+function getAllMeetings(){ return JSON.parse(localStorage.getItem(MEETINGS_KEY) || '[]'); }
+function saveMeeting(){
+  const items = collectInputs();
+  const v = validateTotal(items); if(!v.ok){ alert('Total must be exactly 120 min.'); return; }
+  const saved = getAllMeetings();
+  pushUndo();
+  saved.push({id:randomId(),date:new Date().toLocaleString(),items,notes:qs('notes').value});
+  localStorage.setItem(MEETINGS_KEY, JSON.stringify(saved));
+  loadSavedList();
+  alert('Meeting saved!');
+}
+function loadSavedList(skipRender=false){
+  const saved = getAllMeetings();
+  const container = qs('savedList'); container.innerHTML='';
+  saved.forEach((m,idx)=>{
+    const div = document.createElement('div'); div.style.padding='6px';
+    div.innerHTML = `<b>${idx+1}. ${m.date}</b><div style="font-size:13px">${m.items.map(it=>`${it.name}→${it.task} (${it.minutes})`).join('<br>')}</div>
+      <div style="margin-top:6px">
+        <button onclick='loadMeeting("${m.id}")'>Load</button>
+        <button onclick='editMeeting("${m.id}")'>Edit</button>
+        <button onclick='deleteMeeting("${m.id}")'>Delete</button>
+      </div>`;
+    container.appendChild(div);
+  });
+  generateAnalytics(saved);
+  if(!skipRender && saved.length) qs('alerts').innerHTML = `<div class="badge">${saved.length} meetings saved</div>`;
+}
+function loadMeeting(id){
+  const saved = getAllMeetings().find(m=>m.id===id); if(!saved) return;
+  // populate UI
+  qs('inputsArea').innerHTML=''; saved.items.forEach(it=>addMemberRow(it.name,it.task,it.minutes));
+  qs('numMembers').value = saved.items.length;
+  qs('notes').value = saved.notes||'';
+  generateAll();
+}
+function editMeeting(id){
+  // load into UI and delete original so save will create a new one or replace
+  const saved = getAllMeetings(); const idx = saved.findIndex(m=>m.id===id);
+  if(idx===-1) return;
+  loadMeeting(id);
+  if(confirm('Save will replace the selected meeting (OK to replace). Cancel to keep as new save.')){
+    pushUndo();
+    const items = collectInputs();
+    saved[idx] = {id, date: new Date().toLocaleString(), items, notes:qs('notes').value};
+    localStorage.setItem(MEETINGS_KEY, JSON.stringify(saved));
+    loadSavedList();
+    alert('Meeting replaced.');
+  }
+}
+function deleteMeeting(id){
+  if(!confirm('Delete this meeting?')) return;
+  pushUndo();
+  let arr = getAllMeetings().filter(m=>m.id!==id);
+  localStorage.setItem(MEETINGS_KEY, JSON.stringify(arr));
+  loadSavedList();
+}
+function deleteAllMeetings(){ if(!confirm('Delete ALL saved meetings?')) return; pushUndo(); localStorage.removeItem(MEETINGS_KEY); loadSavedList(); }
+
+/* =========================
+   Exports / import
+   ========================= */
+function exportCSV(){
+  const saved = getAllMeetings(); if(!saved.length){ alert('No meetings to export'); return;}
+  let csv = 'Date,Name,Task,Minutes,Notes\n';
+  saved.forEach(m=> m.items.forEach(it=> csv += `${m.date},"${it.name}","${it.task}",${it.minutes},"${(m.notes||'').replace(/\n/g,' ')}"\n`));
+  downloadBlob(csv,'text/csv','meetings.csv');
+}
+function exportJSON(){
+  const saved = getAllMeetings(); downloadBlob(JSON.stringify(saved, null, 2),'application/json','meetings.json');
+}
+function importJSON(){
+  const inp = document.createElement('input'); inp.type='file'; inp.accept='application/json';
+  inp.onchange = e=>{
+    const f = e.target.files[0]; if(!f) return;
+    const r = new FileReader(); r.onload = ev=>{
+      try{
+        const arr = JSON.parse(ev.target.result);
+        if(!Array.isArray(arr)) throw new Error('Invalid file');
+        pushUndo();
+        localStorage.setItem(MEETINGS_KEY, JSON.stringify(arr));
+        loadSavedList();
+        alert('Imported JSON backup.');
+      }catch(err){ alert('Error importing JSON: '+err.message); }
+    }; r.readAsText(f);
+  }; inp.click();
+}
+function importCSV(){
+  const inp = document.createElement('input'); inp.type='file'; inp.accept='.csv,text/csv';
+  inp.onchange = e=>{
+    const f = e.target.files[0]; if(!f) return;
+    const r = new FileReader(); r.onload = ev=>{
+      const txt = ev.target.result;
+      // very simple CSV parse: expect header Date,Name,Task,Minutes,Notes
+      const rows = txt.trim().split('\n').slice(1).map(r=>r.split(','));
+      const meetings = rows.map(r=>{
+        return {id:randomId(),date:r[0], items:[{name:r[1],task:r[2],minutes:parseInt(r[3])||0}], notes:r[4]||''};
+      });
+      pushUndo();
+      const existing = getAllMeetings();
+      localStorage.setItem(MEETINGS_KEY, JSON.stringify(existing.concat(meetings)));
+      loadSavedList();
+      alert('CSV imported (basic import).');
+    }; r.readAsText(f);
+  }; inp.click();
+}
+
+/* =========================
+   PDF / PNG / print exports
+   ========================= */
+async function downloadChartsPNG(){
+  // render two charts + summary into one canvas via html2canvas and download
+  const el = qs('personPie').parentElement;
+  const canvas = await html2canvas(el,{scale:2});
+  const url = canvas.toDataURL('image/png');
+  downloadUrl(url,'charts.png');
+}
+async function downloadPDF(){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({orientation:'portrait',unit:'pt',format:'a4'});
+  const el = qs('scheduleSummary');
+  await html2canvas(el,{scale:2}).then(canvas=>{
+    const img = canvas.toDataURL('image/png');
+    doc.addImage(img,'PNG',20,20,560,0);
+  });
+  // add charts pages
+  const charts = [qs('personPie'), qs('taskPie'), qs('barChart')];
+  for(const c of charts){
+    const wrapper = c.parentElement;
+    await html2canvas(wrapper,{scale:2}).then(canvas=>{
+      doc.addPage();
+      doc.addImage(canvas.toDataURL('image/png'),'PNG',20,20,560,0);
+    });
+  }
+  doc.save('meeting_export.pdf');
+}
+function printSchedule(){ window.print(); }
+function exportSummaryTXT(){ const txt = qs('scheduleSummary').innerText; downloadBlob(txt,'text/plain','schedule.txt'); }
+
+/* small util downloads */
+function downloadBlob(content,type,filename){
+  const blob = new Blob([content],{type});
+  const url = URL.createObjectURL(blob); downloadUrl(url,filename); setTimeout(()=>URL.revokeObjectURL(url),3000);
+}
+function downloadUrl(url, filename){
+  const a = document.createElement('a'); a.href = url; a.download = filename; a.click();
+}
+
+/* =========================
+   Analytics & stats
+   ========================= */
+function generateAnalytics(saved){
+  const totals = {};
+  saved.forEach(m=> m.items.forEach(it=> totals[it.name] = (totals[it.name]||0)+it.minutes));
+  let html = '<table><thead><tr><th>Name</th><th>Total minutes</th></tr></thead><tbody>';
+  for(const [k,v] of Object.entries(totals)) html += `<tr><td>${k}</td><td>${v}</td></tr>`;
+  html += '</tbody></table>';
+  qs('statsBox').innerHTML = html;
+  // heatmap: simple grid over meetings x persons
+  renderHeatmap(saved);
+}
+function renderHeatmap(saved){
+  if(!saved.length){ qs('heatmap').innerHTML='No meetings saved'; return; }
+  const persons = [...new Set(saved.flatMap(m=>m.items.map(i=>i.name)))];
+  let html = `<table><thead><tr><th>Meeting</th>${persons.map(p=>`<th>${p}</th>`).join('')}</tr></thead><tbody>`;
+  saved.forEach((m,mi)=>{
+    html += `<tr><td>${mi+1}</td>`;
+    persons.forEach(p=>{
+      const it = m.items.find(x=>x.name===p);
+      html += `<td>${it?it.minutes:''}</td>`;
+    });
+    html += `</tr>`;
+  });
+  html += '</tbody></table>';
+  qs('heatmap').innerHTML = html;
+}
+
+/* =========================
+   Fair assignment / rotation
+   ========================= */
+function showFairAssign(){
+  // builds a suggestion of rotating tasks fairly: just shuffle and avoid repeats vs last meeting
+  const saved = getAllMeetings();
+  const last = saved.length ? saved[saved.length-1].items.map(i=>i.name) : [];
+  const items = collectInputs();
+  const names = items.map(i=>i.name);
+  const tasks = items.map(i=>i.task);
+  // simple fairness: rotate task list by 1 each meeting relative to names
+  const rotated = tasks.slice();
+  rotated.unshift(rotated.pop());
+  const suggestions = names.map((n,idx)=> `${n} → ${rotated[idx] || tasks[idx]}`);
+  alert('Fair rotation suggestion:\n' + suggestions.join('\n'));
+}
+
+/* =========================
+   Undo / redo
+   ========================= */
+function undo(){
+  const saved = JSON.parse(localStorage.getItem(UNDO_STACK_KEY) || '[]');
+  if(!saved.length){ alert('Nothing to undo'); return;}
+  const last = saved.pop();
+  redoStack.push(JSON.stringify(getAllMeetings()));
+  localStorage.setItem(UNDO_STACK_KEY, JSON.stringify(saved));
+  localStorage.setItem(MEETINGS_KEY, last);
+  loadSavedList(true);
+  alert('Undo applied');
+}
+function redo(){
+  if(!redoStack.length){ alert('Nothing to redo'); return;}
+  const next = redoStack.pop();
+  pushUndo();
+  localStorage.setItem(MEETINGS_KEY, next);
+  loadSavedList(true);
+}
+
+/* =========================
+   Timer logic (per-task countdown)
+   ========================= */
+function updateTimerUI(){
+  if(!timerState.order.length){ qs('timerUI').classList.add('hidden'); return; }
+  qs('timerUI').classList.remove('hidden');
+  const cur = timerState.order[timerState.index];
+  qs('currentTask').innerText = cur ? `${cur.name} → ${cur.task}` : '—';
+  qs('timeLeft').innerText = formatMs(timerState.secondsLeft);
+}
+function startTimer(){
+  if(!timerState.order.length){ alert('Generate schedule first'); return; }
+  const notify = qs('useNotifications').checked;
+  if(notify && Notification && Notification.permission!=='granted'){ Notification.requestPermission(); }
+  if(timer) clearInterval(timer);
+  timerState.running = true;
+  timer = setInterval(()=>{
+    if(timerState.secondsLeft>0){ timerState.secondsLeft--; updateTimerUI(); }
+    else {
+      // finish current
+      if(qs('autoAdvance').checked && timerState.index < timerState.order.length -1){
+        timerState.index++; timerState.secondsLeft = timerState.order[timerState.index].minutes*60; updateTimerUI();
+        if(notify) notifyNow(`Now: ${timerState.order[timerState.index].name}`);
+      } else {
+        clearInterval(timer); timer=null; timerState.running=false; updateTimerUI();
+        if(notify) notifyNow('Meeting segment finished');
+      }
+    }
+  },1000);
+}
+function pauseTimer(){ if(timer){ clearInterval(timer); timer=null; timerState.running=false; } }
+function resetTimer(){ pauseTimer(); timerState.index=0; timerState.secondsLeft = timerState.order.length ? timerState.order[0].minutes*60 : 0; updateTimerUI(); }
+function notifyNow(txt){ if(Notification && Notification.permission==='granted') new Notification('VEX Timer', {body:txt}); else alert(txt); }
+
+/* =========================
+   Share link (encoded state)
+   ========================= */
+function shareLink(){
+  const state = {items:collectInputs(),notes:qs('notes').value};
+  const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(state))));
+  const href = location.href.split('#')[0] + '#state=' + encoded;
+  navigator.clipboard.writeText(href).then(()=>alert('Link copied to clipboard'));
+}
+function loadFromHash(){
+  if(!location.hash.includes('state=')) return;
+  const enc = location.hash.split('state=')[1];
+  try{
+    const state = JSON.parse(decodeURIComponent(escape(atob(enc))));
+    qs('inputsArea').innerHTML=''; state.items.forEach(it=>addMemberRow(it.name,it.task,it.minutes));
+    qs('notes').value = state.notes||'';
+    generateAll();
+  }catch(e){ console.warn('Could not decode state'); }
+}
+
+/* =========================
+   UI small utils / theme / presets
+   ========================= */
+function toggleTheme(){ const el = document.body; el.dataset.theme = el.dataset.theme==='dark' ? 'light' : 'dark'; }
+function showHelp(){ alert('How to use:\\n1) Set number of members and press Generate.\\n2) Fill name/task/minutes (must sum 120).\\n3) Generate charts and Save meetings.\\n4) Use PDF/CSV export for share.'); }
+function htmlEscape(s){ return (s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;') }
+function generateColors(n){
+  const palette = DEFAULT_COLORS;
+  return Array.from({length:n},(_,i)=>palette[i%palette.length]);
+}
+
+/* =========================
+   Presets (save/load team) simple
+   ========================= */
+function loadPresetsUI(){
+  const presets = JSON.parse(localStorage.getItem(PRESETS_KEY) || '[]');
+  const sel = qs('presetSelect'); sel.innerHTML = '<option value="">— none —</option>';
+  presets.forEach((p,idx)=> sel.innerHTML += `<option value="${idx}">${p.name}</option>`);
+}
+function savePreset(){
+  const name = prompt('Preset name?'); if(!name) return;
+  const items = collectInputs();
+  const presets = JSON.parse(localStorage.getItem(PRESETS_KEY) || '[]');
+  presets.push({name,items});
+  localStorage.setItem(PRESETS_KEY, JSON.stringify(presets));
+  loadPresetsUI();
+}
+function applyPreset(){
+  const idx = qs('presetSelect').value; if(idx==='') return;
+  const presets = JSON.parse(localStorage.getItem(PRESETS_KEY) || '[]');
+  const p = presets[parseInt(idx)];
+  if(!p) return;
+  qs('inputsArea').innerHTML=''; p.items.forEach(it=>addMemberRow(it.name,it.task,it.minutes));
+  qs('numMembers').value = p.items.length;
+}
+
+/* =========================
+   Utility: backup / restore + initial boot
+   ========================= */
+function exportJSON(){ exportBlob(JSON.stringify(getAllMeetings(),null,2),'application/json','meetings.json') }
+function exportBlob(content,type,filename){ const blob = new Blob([content],{type}); const u = URL.createObjectURL(blob); downloadUrl(u,filename); setTimeout(()=>URL.revokeObjectURL(u),3000); }
+
+function init(){
+  qs('numMembers').addEventListener('change', ()=>{ /* no-op */});
+  generateInputsFromCount();
+  loadSavedList();
+  loadPresetsUI();
+  loadFromHash();
+}
+init();
+
+/* =========================
+   Optional: Firebase cloud (commented)
+   ========================= */
+/*
+  // To enable cloud saving and real-time collaboration:
+  // 1) Create Firebase web app.
+  // 2) Paste your config below and uncomment.
+  // 3) Use Firestore to save/load meetings and implement onSnapshot for real-time sync.
+
+  // const firebaseConfig = { apiKey: "...", authDomain: "...", projectId: "...", ... };
+  // import { initializeApp } from "https://www.gstatic.com/firebasejs/9.21.0/firebase-app.js";
+  // import { getFirestore, collection, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/9.21.0/firebase-firestore.js";
+  // const app = initializeApp(firebaseConfig); const db = getFirestore(app);
+*/
+
+</script>
+</body>
+</html>
