@@ -106,18 +106,41 @@ function generateCharts(){
   const ctx = document.getElementById('barChart').getContext('2d');
   barChart = new Chart(ctx,{
     type:'bar',
-    data:{labels, datasets:[{label:'Minutes', data:minutes, backgroundColor:colors}]},
+    data:{
+      labels,
+      datasets:[{
+        label:'Minutes',
+        data:minutes,
+        backgroundColor:colors
+      }]
+    },
     options:{
       indexAxis:'y',
       plugins:{
         legend:{display:false},
-        datalabels:{anchor:'end', align:'right', color:'#000', font:{weight:'bold'}}
+        datalabels:{
+          anchor:'end',
+          align:'right',
+          color:'#000',
+          font:{weight:'bold'}
+        }
       },
-      scales:{x:{beginAtZero:true}}
+      scales:{
+        x:{beginAtZero:true},
+        y:{
+          ticks:{
+            font:{
+              weight:'bold',   // makes left-hand labels bold
+              size:12          // you can also increase size for readability
+            }
+          }
+        }
+      }
     },
     plugins: [ChartDataLabels]
   });
 }
+
 
 function exportPDF(){
   html2canvas(document.querySelector('#barChart')).then(canvas=>{
