@@ -56,7 +56,7 @@
       <div id="inputsArea"></div>
       <button class="btn-blue" onclick="addMember()">+ Add Member</button>
       <button class="btn-green" onclick="generateCharts()">Update Graph</button>
-      <button class="btn-purple" onclick="exportTracker()">Copy & Download Bold Graph</button>
+      <button class="btn-purple" onclick="exportTracker()">Copy & Download Graph</button>
     </div>
     <div class="card">
       <h2>Activity Breakdown</h2>
@@ -126,7 +126,10 @@ function generateCharts() {
       members.push({ name, task: r.querySelector('input').value || 'Task', mins: parseInt(r.querySelector('.m-in').value)||0, color: COLORS[mIdx % 10] });
     });
   });
+  
   const meetingMins = parseInt(document.getElementById('meetingDuration').value) || 1;
+  const maxMinutes = Math.max(...members.map(m => m.mins), meetingMins);
+  
   document.getElementById('stat-total-mins').innerText = members.reduce((s, i) => s + i.mins, 0);
   document.getElementById('stat-members').innerText = document.querySelectorAll('.member').length;
 
@@ -141,26 +144,25 @@ function generateCharts() {
       indexAxis: 'y', 
       responsive: true, 
       maintainAspectRatio: false,
+      layout: {
+        padding: { right: 80 } // Pushes the whole graph left to make room for labels
+      },
       scales: {
-        y: {
-          ticks: {
-            color: '#000',
-            font: { weight: '900', size: 15 } // Extra bold y-axis names
-          }
-        },
-        x: {
-          ticks: {
-            color: '#000',
-            font: { weight: '900', size: 14 } // Extra bold x-axis numbers
-          }
+        y: { ticks: { color: '#000', font: { weight: '900', size: 15 } } },
+        x: { 
+          beginAtZero: true,
+          max: maxMinutes * 1.2, // Adds 20% "White Space" at the end of the longest bar
+          ticks: { color: '#000', font: { weight: '900', size: 14 } } 
         }
       },
       plugins: { 
         datalabels: { 
           anchor:'end', 
           align:'right', 
+          offset: 5,
           color:'#000', 
-          font:{ weight:'900', size:16 }, // Extra bold data labels
+          clip: false, // Prevents text from being hidden if it goes past the axis
+          font:{ weight:'900', size:16 }, 
           formatter: v => v+'m ('+Math.round((v/meetingMins)*100)+'%)' 
         }, 
         legend: {display:false} 
@@ -187,7 +189,7 @@ function drawCalendar(scale = 1) {
   
   ctx.fillStyle = "white"; ctx.fillRect(0,0,W,H);
   ctx.fillStyle = "#174ea6"; ctx.fillRect(0,0,W, 80 * scale);
-  ctx.fillStyle = "white"; ctx.font = `900 ${32 * scale}px Arial`; // Bolder title
+  ctx.fillStyle = "white"; ctx.font = `900 ${32 * scale}px Arial`;
   const monthName = new Intl.DateTimeFormat('en-US', {month:'long'}).format(new Date(year, month));
   ctx.fillText(`${monthName.toUpperCase()} ${year} - TEAM SCHEDULE`, 20 * scale, 52 * scale);
 
@@ -206,13 +208,13 @@ function drawCalendar(scale = 1) {
       if (r === 0 && c < firstDay) continue;
       if (curDay > daysInMonth) break;
       const x = c * colW; const y = startY + (r * rowH);
-      ctx.strokeStyle = "#bbb"; ctx.lineWidth = 2 * scale; // Bolder grid lines
+      ctx.strokeStyle = "#bbb"; ctx.lineWidth = 2 * scale;
       ctx.strokeRect(x, y, colW, rowH);
-      ctx.fillStyle = "#000"; ctx.font = `900 ${18 * scale}px Arial`; // Bolder day numbers
+      ctx.fillStyle = "#000"; ctx.font = `900 ${18 * scale}px Arial`;
       ctx.fillText(curDay, x + 10*scale, y + 25*scale);
       if (events[curDay]) {
         ctx.fillStyle = "#e74c3c"; ctx.fillRect(x + 2, y + rowH - (30*scale), colW - 4, 26*scale);
-        ctx.fillStyle = "white"; ctx.font = `900 ${12 * scale}px Arial`; // Bolder event text
+        ctx.fillStyle = "white"; ctx.font = `900 ${12 * scale}px Arial`;
         ctx.fillText(events[curDay], x + 5*scale, y + rowH - (12*scale));
       }
       curDay++;
@@ -232,7 +234,7 @@ async function handleOutput(canvas, name) {
     await navigator.clipboard.write(data);
     alert("Copied to Clipboard & Downloaded!");
   } catch (err) {
-    alert("Downloaded! Clipboard copy failed (Usually due to local file security).");
+    alert("Downloaded! Clipboard failed.");
   }
 }
 
