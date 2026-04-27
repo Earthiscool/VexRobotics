@@ -56,7 +56,7 @@
       <div id="inputsArea"></div>
       <button class="btn-blue" onclick="addMember()">+ Add Member</button>
       <button class="btn-green" onclick="generateCharts()">Update Graph</button>
-      <button class="btn-purple" onclick="exportTracker()">Copy & Download Graph</button>
+      <button class="btn-purple" onclick="exportTracker()">Copy & Download Bold Graph</button>
     </div>
     <div class="card">
       <h2>Activity Breakdown</h2>
@@ -101,7 +101,6 @@ function openTab(tabId) {
   event.currentTarget.classList.add('active');
 }
 
-/* --- TRACKER --- */
 function addMember(name='', assignments=[{task:'', minutes:''}]) {
   const div = document.createElement('div');
   div.className='member';
@@ -133,19 +132,44 @@ function generateCharts() {
 
   if(barChart) barChart.destroy();
   barChart = new Chart(document.getElementById('barChart'), {
-    type: 'bar', data: {
+    type: 'bar', 
+    data: {
       labels: members.map(m => `${m.name}: ${m.task}`),
       datasets: [{ data: members.map(m => m.mins), backgroundColor: members.map(m => m.color) }]
     },
     options: { 
-      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-      plugins: { datalabels: { anchor:'end', align:'right', color:'#000', font:{weight:'900', size:14}, formatter: v => v+'m ('+Math.round((v/meetingMins)*100)+'%)' }, legend: {display:false} }
+      indexAxis: 'y', 
+      responsive: true, 
+      maintainAspectRatio: false,
+      scales: {
+        y: {
+          ticks: {
+            color: '#000',
+            font: { weight: '900', size: 15 } // Extra bold y-axis names
+          }
+        },
+        x: {
+          ticks: {
+            color: '#000',
+            font: { weight: '900', size: 14 } // Extra bold x-axis numbers
+          }
+        }
+      },
+      plugins: { 
+        datalabels: { 
+          anchor:'end', 
+          align:'right', 
+          color:'#000', 
+          font:{ weight:'900', size:16 }, // Extra bold data labels
+          formatter: v => v+'m ('+Math.round((v/meetingMins)*100)+'%)' 
+        }, 
+        legend: {display:false} 
+      }
     },
     plugins: [ChartDataLabels]
   });
 }
 
-/* --- CALENDAR --- */
 function addEventRow(day='', text='') {
   const div = document.createElement('div');
   div.className = 'event-row';
@@ -163,7 +187,7 @@ function drawCalendar(scale = 1) {
   
   ctx.fillStyle = "white"; ctx.fillRect(0,0,W,H);
   ctx.fillStyle = "#174ea6"; ctx.fillRect(0,0,W, 80 * scale);
-  ctx.fillStyle = "white"; ctx.font = `bold ${30 * scale}px Arial`;
+  ctx.fillStyle = "white"; ctx.font = `900 ${32 * scale}px Arial`; // Bolder title
   const monthName = new Intl.DateTimeFormat('en-US', {month:'long'}).format(new Date(year, month));
   ctx.fillText(`${monthName.toUpperCase()} ${year} - TEAM SCHEDULE`, 20 * scale, 52 * scale);
 
@@ -182,68 +206,55 @@ function drawCalendar(scale = 1) {
       if (r === 0 && c < firstDay) continue;
       if (curDay > daysInMonth) break;
       const x = c * colW; const y = startY + (r * rowH);
-      ctx.strokeStyle = "#ddd"; ctx.strokeRect(x, y, colW, rowH);
-      ctx.fillStyle = "#333"; ctx.font = `bold ${16 * scale}px Arial`;
+      ctx.strokeStyle = "#bbb"; ctx.lineWidth = 2 * scale; // Bolder grid lines
+      ctx.strokeRect(x, y, colW, rowH);
+      ctx.fillStyle = "#000"; ctx.font = `900 ${18 * scale}px Arial`; // Bolder day numbers
       ctx.fillText(curDay, x + 10*scale, y + 25*scale);
       if (events[curDay]) {
-        ctx.fillStyle = "#e74c3c"; ctx.fillRect(x + 2, y + rowH - (28*scale), colW - 4, 24*scale);
-        ctx.fillStyle = "white"; ctx.font = `bold ${11 * scale}px Arial`;
-        ctx.fillText(events[curDay], x + 5*scale, y + rowH - (11*scale));
+        ctx.fillStyle = "#e74c3c"; ctx.fillRect(x + 2, y + rowH - (30*scale), colW - 4, 26*scale);
+        ctx.fillStyle = "white"; ctx.font = `900 ${12 * scale}px Arial`; // Bolder event text
+        ctx.fillText(events[curDay], x + 5*scale, y + rowH - (12*scale));
       }
       curDay++;
     }
   }
 }
 
-/* --- THE CLIPBOARD ENGINE --- */
-async function exportTracker() {
-  const canvas = document.getElementById('barChart');
-  const highRes = createHighResCanvas(canvas, 3);
-  handleOutput(highRes, 'VEX_Time_Report');
-}
-
-async function exportCalendar() {
-  // Redraw specifically for export at high scale
-  const tempCanvas = document.createElement('canvas');
-  tempCanvas.width = 2400; // 800 * 3
-  tempCanvas.height = 1800; // 600 * 3
-  
-  // We use the existing draw function but logic to a temp canvas or scale the current one
-  drawCalendar(3); 
-  const highRes = document.getElementById('calCanvas');
-  await handleOutput(highRes, 'Team_Calendar');
-  drawCalendar(1); // Restore view
-}
-
-function createHighResCanvas(srcCanvas, scale) {
-  const temp = document.createElement('canvas');
-  temp.width = srcCanvas.width * scale;
-  temp.height = srcCanvas.height * scale;
-  const tCtx = temp.getContext('2d');
-  tCtx.fillStyle = "white";
-  tCtx.fillRect(0,0,temp.width, temp.height);
-  tCtx.scale(scale, scale);
-  tCtx.drawImage(srcCanvas, 0, 0);
-  return temp;
-}
-
 async function handleOutput(canvas, name) {
-  // 1. Download
   const link = document.createElement('a');
   link.download = name + '.png';
   link.href = canvas.toDataURL('image/png', 1.0);
   link.click();
 
-  // 2. Clipboard (The Fixed Part)
   try {
     const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
     const data = [new ClipboardItem({ 'image/png': blob })];
     await navigator.clipboard.write(data);
     alert("Copied to Clipboard & Downloaded!");
   } catch (err) {
-    console.error(err);
-    alert("Downloaded! Clipboard copy failed (Note: Some browsers block clipboard on local 'file://' links).");
+    alert("Downloaded! Clipboard copy failed (Usually due to local file security).");
   }
+}
+
+async function exportTracker() {
+  const canvas = document.getElementById('barChart');
+  const highRes = document.createElement('canvas');
+  const scale = 3;
+  highRes.width = canvas.width * scale;
+  highRes.height = canvas.height * scale;
+  const tCtx = highRes.getContext('2d');
+  tCtx.fillStyle = "white";
+  tCtx.fillRect(0,0,highRes.width, highRes.height);
+  tCtx.scale(scale, scale);
+  tCtx.drawImage(canvas, 0, 0);
+  handleOutput(highRes, 'VEX_Time_Report');
+}
+
+async function exportCalendar() {
+  drawCalendar(3); 
+  const highRes = document.getElementById('calCanvas');
+  await handleOutput(highRes, 'Team_Calendar');
+  drawCalendar(1); 
 }
 
 addMember("Member 1");
