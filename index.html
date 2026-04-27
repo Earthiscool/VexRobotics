@@ -7,90 +7,118 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
 <style>
-  body { font-family: 'Segoe UI', Arial, sans-serif; background: #f4f6fb; color: #07203a; margin: 20px; }
-  h1, h2 { color: #174ea6; }
+  :root { --vex-blue: #174ea6; --vex-red: #e74c3c; --vex-green: #27ae60; --bg: #f4f6fb; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--bg); color: #07203a; margin: 0; padding: 20px; }
   
-  /* Layout */
-  .summary-card { background: #174ea6; color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; display: flex; gap: 40px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+  /* Tabs Navigation */
+  .tabs-nav { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 3px solid #ddd; padding-bottom: 10px; }
+  .tab-btn { padding: 12px 24px; font-size: 16px; font-weight: bold; cursor: pointer; border: none; background: #e0e0e0; border-radius: 8px; transition: 0.3s; }
+  .tab-btn.active { background: var(--vex-blue); color: white; }
+
+  /* Summary Bar */
+  .summary-card { background: var(--vex-blue); color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; display: flex; gap: 40px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
   .stat-label { display: block; font-size: 0.8rem; opacity: 0.8; }
   .stat-val { font-size: 1.5rem; font-weight: bold; }
+
+  /* Content Layout */
+  .tab-content { display: none; animation: fadeIn 0.3s; }
+  .tab-content.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
   .container { display: flex; gap: 24px; flex-wrap: wrap; }
   .card { background: #fff; padding: 20px; border-radius: 12px; flex: 1; min-width: 450px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
   
-  /* Inputs */
-  .member, .event-row { background: #f9f9f9; padding: 12px; border-radius: 8px; margin-bottom: 10px; border-left: 5px solid #174ea6; }
+  /* UI Elements */
+  .member, .event-row { background: #f9f9f9; padding: 12px; border-radius: 8px; margin-bottom: 10px; border-left: 5px solid var(--vex-blue); }
   input, select { padding: 8px; border-radius: 6px; border: 1px solid #ccc; margin: 4px 0; }
-  button { background: #174ea6; color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; margin: 5px 0; }
-  button:hover { background: #0d3a85; }
-  .btn-green { background: #27ae60; }
+  button { color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; margin: 5px 0; }
+  .btn-blue { background: var(--vex-blue); }
+  .btn-green { background: var(--vex-green); }
   .btn-purple { background: #8e44ad; }
-  .remove { background: #e74c3c; font-size: 11px; padding: 4px 8px; float: right; }
+  .remove { background: var(--vex-red); font-size: 11px; padding: 4px 8px; float: right; }
 
-  /* Displays */
-  .display-area { margin-top: 20px; text-align: center; }
-  canvas { max-width: 100%; height: auto; border-radius: 8px; border: 1px solid #ddd; }
-  .hidden-canvas { display: none; }
+  .display-area { margin-top: 20px; text-align: center; background: white; padding: 10px; border-radius: 8px; }
+  canvas { max-width: 100%; height: auto; }
 </style>
 </head>
 <body>
 
-<h1>VEX Robotics Team Portal</h1>
+<div class="tabs-nav">
+  <button class="tab-btn active" onclick="openTab('tracker-tab')">📊 Time Tracker</button>
+  <button class="tab-btn" onclick="openTab('calendar-tab')">📅 Team Calendar</button>
+</div>
 
 <div class="summary-card">
   <div><span class="stat-label">Total Man-Minutes</span><span id="stat-total-mins" class="stat-val">0</span></div>
-  <div><span class="stat-label">Meeting Utilization</span><span id="stat-util" class="stat-val">0%</span></div>
-  <div><span class="stat-label">Projected Milestones</span><span id="stat-events" class="stat-val">0</span></div>
+  <div><span class="stat-label">Active Members</span><span id="stat-members" class="stat-val">0</span></div>
+  <div><span class="stat-label">Milestones Set</span><span id="stat-events" class="stat-val">0</span></div>
 </div>
 
-<div class="container">
-  <div class="card">
-    <h2>Time Tracker</h2>
-    <div style="margin-bottom:15px;">
-      Meeting Mins: <input type="number" id="meetingDuration" value="120" style="width:70px">
+<div id="tracker-tab" class="tab-content active">
+  <div class="container">
+    <div class="card">
+      <h2>Data Entry</h2>
+      <div style="margin-bottom:15px;">
+        Meeting Duration: <input type="number" id="meetingDuration" value="120" style="width:70px"> mins
+      </div>
+      <div id="inputsArea"></div>
+      <button class="btn-blue" onclick="addMember()">+ Add Member</button>
+      <button class="btn-green" onclick="generateCharts()">Update Horizontal Graph</button>
+      <button class="btn-purple" onclick="exportHighRes('barChart', 'VEX_Time_Report')">Copy & Download Graph</button>
     </div>
-    <div id="inputsArea"></div>
-    <button onclick="addMember()">+ Add Member</button>
-    <button class="btn-green" onclick="generateCharts()">Update Graph</button>
-    <button class="btn-purple" onclick="exportHighRes('barChart', 'VEX_Time_Report')">Copy & Download Graph</button>
-    
-    <div class="display-area">
-      <canvas id="barChart" height="400"></canvas>
+    <div class="card">
+      <h2>Activity Breakdown (Horizontal)</h2>
+      <div class="display-area">
+        <canvas id="barChart" height="500"></canvas>
+      </div>
     </div>
   </div>
+</div>
 
-  <div class="card">
-    <h2>Team Calendar</h2>
-    <div style="display:flex; gap:10px; margin-bottom:15px;">
-      <select id="calMonth">
-        <option value="0">January</option><option value="1">February</option><option value="2">March</option>
-        <option value="3">April</option><option value="4">May</option><option value="5">June</option>
-        <option value="6">July</option><option value="7">August</option><option value="8">September</option>
-        <option value="9">October</option><option value="10" selected>November</option><option value="11">December</option>
-      </select>
-      <input type="number" id="calYear" value="2024" style="width:80px">
+<div id="calendar-tab" class="tab-content">
+  <div class="container">
+    <div class="card">
+      <h2>Calendar Settings</h2>
+      <div style="display:flex; gap:10px; margin-bottom:15px;">
+        <select id="calMonth">
+          <option value="0">January</option><option value="1">February</option><option value="2">March</option>
+          <option value="3">April</option><option value="4">May</option><option value="5">June</option>
+          <option value="6">July</option><option value="7">August</option><option value="8">September</option>
+          <option value="9" selected>October</option><option value="10">November</option><option value="11">December</option>
+        </select>
+        <input type="number" id="calYear" value="2024" style="width:80px">
+      </div>
+      <div id="eventsArea"></div>
+      <button class="btn-blue" onclick="addEventRow()">+ Add Key Date</button>
+      <button class="btn-green" onclick="drawCalendar()">Generate Calendar</button>
+      <button class="btn-purple" onclick="exportCalendar()">Copy & Download Calendar</button>
     </div>
-    
-    <div id="eventsArea"></div>
-    <button onclick="addEventRow()">+ Add Key Date</button>
-    <button class="btn-green" onclick="drawCalendar()">Generate Calendar</button>
-    <button class="btn-purple" onclick="exportCalendar()">Copy & Download Calendar</button>
-
-    <div class="display-area">
-      <canvas id="calCanvas" width="800" height="600"></canvas>
+    <div class="card">
+      <h2>Monthly Schedule</h2>
+      <div class="display-area">
+        <canvas id="calCanvas" width="800" height="600"></canvas>
+      </div>
     </div>
   </div>
 </div>
 
 <script>
-const DEFAULT_COLORS = ['#3b82f6','#ef4444','#f97316','#10b981','#8b5cf6','#f43f5e','#06b6d4','#a78bfa','#f59e0b','#84cc16'];
+const COLORS = ['#3b82f6','#ef4444','#f97316','#10b981','#8b5cf6','#f43f5e','#06b6d4','#a78bfa','#f59e0b','#84cc16'];
 let barChart;
 
-/* --- TIME TRACKER LOGIC --- */
+function openTab(tabId) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(tabId).classList.add('active');
+  event.currentTarget.classList.add('active');
+}
+
+/* --- TRACKER --- */
 function addMember(name='', assignments=[{task:'', minutes:''}]) {
   const div = document.createElement('div');
   div.className='member';
   div.innerHTML = `<input type="text" placeholder="Name" value="${name}" style="font-weight:bold"><button class="remove" onclick="this.parentElement.remove()">✕</button>
-    <div class="tasks"></div><button onclick="addTask(this)" style="font-size:10px">+ Task</button>`;
+    <div class="tasks"></div><button onclick="addTask(this)" class="btn-blue" style="font-size:10px; padding:4px 8px;">+ Task</button>`;
   const tasksDiv = div.querySelector('.tasks');
   assignments.forEach(a => addTaskRow(tasksDiv, a.task, a.minutes));
   document.getElementById('inputsArea').appendChild(div);
@@ -98,45 +126,56 @@ function addMember(name='', assignments=[{task:'', minutes:''}]) {
 function addTask(btn) { addTaskRow(btn.parentElement.querySelector('.tasks')); }
 function addTaskRow(container, t='', m='') {
   const row = document.createElement('div');
-  row.innerHTML = `<input type="text" placeholder="Task" value="${t}" style="width:60%"> <input type="number" placeholder="Mins" class="m-in" value="${m}" style="width:50px">`;
+  row.style.display = 'flex'; row.style.gap = '5px';
+  row.innerHTML = `<input type="text" placeholder="Task" value="${t}" style="flex:2"> <input type="number" placeholder="Mins" class="m-in" value="${m}" style="width:60px">`;
   container.appendChild(row);
 }
 
 function generateCharts() {
   const members = [];
-  document.querySelectorAll('.member').forEach(m => {
-    const name = m.querySelector('input').value;
+  document.querySelectorAll('.member').forEach((m, mIdx) => {
+    const name = m.querySelector('input').value || 'Unknown';
     m.querySelectorAll('.tasks > div').forEach(r => {
-      members.push({ name, task: r.querySelector('input').value, mins: parseInt(r.querySelector('.m-in').value)||0 });
+      members.push({ 
+        name, 
+        task: r.querySelector('input').value || 'Task', 
+        mins: parseInt(r.querySelector('.m-in').value)||0,
+        color: COLORS[mIdx % 10]
+      });
     });
   });
 
   const meetingMins = parseInt(document.getElementById('meetingDuration').value) || 1;
   const totalMins = members.reduce((sum, item) => sum + item.mins, 0);
   document.getElementById('stat-total-mins').innerText = totalMins;
-  document.getElementById('stat-util').innerText = Math.round((totalMins/(meetingMins*Math.max(1, document.querySelectorAll('.member').length)))*100) + "%";
+  document.getElementById('stat-members').innerText = document.querySelectorAll('.member').length;
 
   if(barChart) barChart.destroy();
   barChart = new Chart(document.getElementById('barChart'), {
-    type: 'bar', indexAxis: 'y',
+    type: 'bar', 
     data: {
       labels: members.map(m => `${m.name}: ${m.task}`),
-      datasets: [{ data: members.map(m => m.mins), backgroundColor: members.map((_,i) => DEFAULT_COLORS[i%10]) }]
+      datasets: [{ data: members.map(m => m.mins), backgroundColor: members.map(m => m.color) }]
     },
     options: { 
-      plugins: { datalabels: { anchor:'end', align:'right', formatter: v => v+'m ('+Math.round((v/meetingMins)*100)+'%)', font:{weight:'bold'} }, legend: {display:false} },
-      scales: { x: { beginAtZero: true } }
+      indexAxis: 'y', // KEEP HORIZONTAL
+      responsive: true, maintainAspectRatio: false,
+      plugins: { 
+        datalabels: { anchor:'end', align:'right', color:'#000', font:{weight:'900', size:14}, formatter: v => v+'m ('+Math.round((v/meetingMins)*100)+'%)' },
+        legend: {display:false} 
+      },
+      scales: { x: { beginAtZero: true, title: {display:true, text:'Minutes'} } }
     },
     plugins: [ChartDataLabels]
   });
 }
 
-/* --- CALENDAR LOGIC --- */
+/* --- CALENDAR --- */
 function addEventRow(day='', text='') {
   const div = document.createElement('div');
   div.className = 'event-row';
-  div.innerHTML = `Day: <input type="number" class="ev-day" value="${day}" style="width:40px"> 
-                   Label: <input type="text" class="ev-text" value="${text}" placeholder="State Champs..." style="width:60%">
+  div.innerHTML = `Day: <input type="number" class="ev-day" value="${day}" style="width:45px"> 
+                   Label: <input type="text" class="ev-text" value="${text}" placeholder="Event Name" style="width:50%">
                    <button class="remove" onclick="this.parentElement.remove()">✕</button>`;
   document.getElementById('eventsArea').appendChild(div);
 }
@@ -147,103 +186,61 @@ function drawCalendar(scale = 1) {
   const month = parseInt(document.getElementById('calMonth').value);
   const year = parseInt(document.getElementById('calYear').value);
   
-  // High-res adjustment
-  const W = 800 * scale;
-  const H = 600 * scale;
+  const W = 800 * scale; const H = 600 * scale;
   canvas.width = W; canvas.height = H;
   
-  // Background
-  ctx.fillStyle = "#ffffff";
-  ctx.fillRect(0,0,W,H);
-  
-  // Header
-  ctx.fillStyle = "#174ea6";
-  ctx.fillRect(0,0,W, 80 * scale);
-  ctx.fillStyle = "white";
-  ctx.font = `bold ${32 * scale}px Arial`;
+  ctx.fillStyle = "white"; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle = "#174ea6"; ctx.fillRect(0,0,W, 80 * scale);
+  ctx.fillStyle = "white"; ctx.font = `bold ${30 * scale}px Arial`;
   const monthName = new Intl.DateTimeFormat('en-US', {month:'long'}).format(new Date(year, month));
-  ctx.fillText(`${monthName} ${year} - Robotics Schedule`, 20 * scale, 50 * scale);
+  ctx.fillText(`${monthName.toUpperCase()} ${year} - ROBOTICS`, 20 * scale, 52 * scale);
 
-  // Calendar Math
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-  
-  const colW = W / 7;
-  const rowH = (H - 120 * scale) / 5;
+  const colW = W / 7; const rowH = (H - 120 * scale) / 5;
   const startY = 110 * scale;
 
-  // Draw Day Labels
-  ctx.fillStyle = "#334155";
-  ctx.font = `bold ${16 * scale}px Arial`;
-  days.forEach((d, i) => ctx.fillText(d, (i * colW) + (colW/3), 100 * scale));
-
-  // Get Key Dates
   const events = {};
   document.querySelectorAll('.event-row').forEach(row => {
     events[row.querySelector('.ev-day').value] = row.querySelector('.ev-text').value;
   });
   document.getElementById('stat-events').innerText = Object.keys(events).length;
 
-  // Draw Grid & Days
   let curDay = 1;
   for (let r = 0; r < 6; r++) {
     for (let c = 0; c < 7; c++) {
       if (r === 0 && c < firstDay) continue;
       if (curDay > daysInMonth) break;
-
-      const x = c * colW;
-      const y = startY + (r * rowH);
-
-      // Cell Border
-      ctx.strokeStyle = "#e2e8f0";
-      ctx.strokeRect(x, y, colW, rowH);
-
-      // Day Number
-      ctx.fillStyle = "#1e293b";
-      ctx.font = `bold ${14 * scale}px Arial`;
+      const x = c * colW; const y = startY + (r * rowH);
+      ctx.strokeStyle = "#ddd"; ctx.strokeRect(x, y, colW, rowH);
+      ctx.fillStyle = "#333"; ctx.font = `bold ${16 * scale}px Arial`;
       ctx.fillText(curDay, x + 10*scale, y + 25*scale);
-
-      // Event Text
       if (events[curDay]) {
-        ctx.fillStyle = "#ef4444";
-        ctx.fillRect(x + 2, y + rowH - (25*scale), colW - 4, 22*scale);
-        ctx.fillStyle = "white";
-        ctx.font = `bold ${10 * scale}px Arial`;
-        ctx.fillText(events[curDay].substring(0, 15), x + 5*scale, y + rowH - (10*scale));
+        ctx.fillStyle = "#e74c3c"; ctx.fillRect(x + 2, y + rowH - (25*scale), colW - 4, 22*scale);
+        ctx.fillStyle = "white"; ctx.font = `bold ${11 * scale}px Arial`;
+        ctx.fillText(events[curDay], x + 5*scale, y + rowH - (10*scale));
       }
       curDay++;
     }
   }
 }
 
-/* --- EXPORT LOGIC --- */
+/* --- EXPORTS --- */
 async function exportHighRes(id, fileName) {
   const canvas = document.getElementById(id);
-  const tempCanvas = document.createElement('canvas');
   const scale = 3;
-  tempCanvas.width = canvas.width * scale;
-  tempCanvas.height = canvas.height * scale;
+  const tempCanvas = document.createElement('canvas');
+  tempCanvas.width = canvas.width * scale; tempCanvas.height = canvas.height * scale;
   const tCtx = tempCanvas.getContext('2d');
-  tCtx.fillStyle = "white";
-  tCtx.fillRect(0,0,tempCanvas.width, tempCanvas.height);
-  tCtx.scale(scale, scale);
-  tCtx.drawImage(canvas, 0, 0);
-  
+  tCtx.fillStyle = "white"; tCtx.fillRect(0,0,tempCanvas.width, tempCanvas.height);
+  tCtx.scale(scale, scale); tCtx.drawImage(canvas, 0, 0);
   copyAndDownload(tempCanvas, fileName);
 }
 
 function exportCalendar() {
-  // We redraw specifically for high-res before exporting
-  const tempCanvas = document.createElement('canvas');
-  document.body.appendChild(tempCanvas);
-  tempCanvas.id = "tempCal";
-  tempCanvas.style.display = "none";
-  
-  // Re-run draw logic at 3x scale inside the export function
-  drawCalendar(3); // This scales the main canvas up
+  drawCalendar(3); 
   copyAndDownload(document.getElementById('calCanvas'), "Team_Calendar");
-  drawCalendar(1); // Scale it back down for the web view
+  drawCalendar(1); 
 }
 
 async function copyAndDownload(cvs, name) {
@@ -251,19 +248,17 @@ async function copyAndDownload(cvs, name) {
   link.download = name + '.png';
   link.href = cvs.toDataURL('image/png');
   link.click();
-
   try {
     cvs.toBlob(async (blob) => {
       const item = new ClipboardItem({ "image/png": blob });
       await navigator.clipboard.write([item]);
-      alert("Done! High-Res image saved & copied to clipboard.");
+      alert("Success! High-Res PNG saved and copied to clipboard.");
     });
-  } catch(e) { alert("Saved to downloads! (Clipboard copy requires HTTPS or focus)"); }
+  } catch(e) { alert("Image saved! (Clipboard requires HTTPS or Focus)"); }
 }
 
-// Init
-addMember("Team Member 1");
-addEventRow(15, "Competition");
+addMember("Member 1");
+addEventRow(10, "Design Review");
 drawCalendar();
 </script>
 </body>
