@@ -3,41 +3,35 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>VEX Team Analytics & Calendar</title>
+<title>VEX Analytics & Calendar Pro</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
 <style>
   :root { --vex-blue: #174ea6; --vex-red: #e74c3c; --vex-green: #27ae60; --bg: #f4f6fb; }
   body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--bg); color: #07203a; margin: 0; padding: 20px; }
   
-  /* Tabs Navigation */
   .tabs-nav { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 3px solid #ddd; padding-bottom: 10px; }
-  .tab-btn { padding: 12px 24px; font-size: 16px; font-weight: bold; cursor: pointer; border: none; background: #e0e0e0; border-radius: 8px; transition: 0.3s; }
+  .tab-btn { padding: 12px 24px; font-size: 16px; font-weight: bold; cursor: pointer; border: none; background: #e0e0e0; border-radius: 8px; }
   .tab-btn.active { background: var(--vex-blue); color: white; }
 
-  /* Summary Bar */
-  .summary-card { background: var(--vex-blue); color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; display: flex; gap: 40px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-  .stat-label { display: block; font-size: 0.8rem; opacity: 0.8; }
-  .stat-val { font-size: 1.5rem; font-weight: bold; }
+  .summary-card { background: var(--vex-blue); color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; display: flex; gap: 40px; }
+  .stat-val { font-size: 1.5rem; font-weight: bold; display: block;}
 
-  /* Content Layout */
-  .tab-content { display: none; animation: fadeIn 0.3s; }
+  .tab-content { display: none; }
   .tab-content.active { display: block; }
-  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
   .container { display: flex; gap: 24px; flex-wrap: wrap; }
   .card { background: #fff; padding: 20px; border-radius: 12px; flex: 1; min-width: 450px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
   
-  /* UI Elements */
   .member, .event-row { background: #f9f9f9; padding: 12px; border-radius: 8px; margin-bottom: 10px; border-left: 5px solid var(--vex-blue); }
   input, select { padding: 8px; border-radius: 6px; border: 1px solid #ccc; margin: 4px 0; }
-  button { color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; margin: 5px 0; }
+  button { color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; }
   .btn-blue { background: var(--vex-blue); }
   .btn-green { background: var(--vex-green); }
-  .btn-purple { background: #8e44ad; }
+  .btn-purple { background: #8e44ad; width: 100%; margin-top: 10px; font-size: 1.1rem; }
   .remove { background: var(--vex-red); font-size: 11px; padding: 4px 8px; float: right; }
 
-  .display-area { margin-top: 20px; text-align: center; background: white; padding: 10px; border-radius: 8px; }
+  .display-area { margin-top: 20px; text-align: center; background: white; padding: 10px; border-radius: 8px; border: 1px solid #eee; }
   canvas { max-width: 100%; height: auto; }
 </style>
 </head>
@@ -49,28 +43,24 @@
 </div>
 
 <div class="summary-card">
-  <div><span class="stat-label">Total Man-Minutes</span><span id="stat-total-mins" class="stat-val">0</span></div>
-  <div><span class="stat-label">Active Members</span><span id="stat-members" class="stat-val">0</span></div>
-  <div><span class="stat-label">Milestones Set</span><span id="stat-events" class="stat-val">0</span></div>
+  <div><span style="opacity:0.8">Total Man-Minutes</span><span id="stat-total-mins" class="stat-val">0</span></div>
+  <div><span style="opacity:0.8">Active Members</span><span id="stat-members" class="stat-val">0</span></div>
+  <div><span style="opacity:0.8">Key Dates</span><span id="stat-events" class="stat-val">0</span></div>
 </div>
 
 <div id="tracker-tab" class="tab-content active">
   <div class="container">
     <div class="card">
       <h2>Data Entry</h2>
-      <div style="margin-bottom:15px;">
-        Meeting Duration: <input type="number" id="meetingDuration" value="120" style="width:70px"> mins
-      </div>
+      <div style="margin-bottom:15px;">Meeting Time: <input type="number" id="meetingDuration" value="120" style="width:70px"> mins</div>
       <div id="inputsArea"></div>
       <button class="btn-blue" onclick="addMember()">+ Add Member</button>
-      <button class="btn-green" onclick="generateCharts()">Update Horizontal Graph</button>
-      <button class="btn-purple" onclick="exportHighRes('barChart', 'VEX_Time_Report')">Copy & Download Graph</button>
+      <button class="btn-green" onclick="generateCharts()">Update Graph</button>
+      <button class="btn-purple" onclick="exportTracker()">Copy & Download Graph</button>
     </div>
     <div class="card">
-      <h2>Activity Breakdown (Horizontal)</h2>
-      <div class="display-area">
-        <canvas id="barChart" height="500"></canvas>
-      </div>
+      <h2>Activity Breakdown</h2>
+      <div class="display-area"><canvas id="barChart" height="500"></canvas></div>
     </div>
   </div>
 </div>
@@ -84,20 +74,18 @@
           <option value="0">January</option><option value="1">February</option><option value="2">March</option>
           <option value="3">April</option><option value="4">May</option><option value="5">June</option>
           <option value="6">July</option><option value="7">August</option><option value="8">September</option>
-          <option value="9" selected>October</option><option value="10">November</option><option value="11">December</option>
+          <option value="9">October</option><option value="10" selected>November</option><option value="11">December</option>
         </select>
         <input type="number" id="calYear" value="2024" style="width:80px">
       </div>
       <div id="eventsArea"></div>
       <button class="btn-blue" onclick="addEventRow()">+ Add Key Date</button>
-      <button class="btn-green" onclick="drawCalendar()">Generate Calendar</button>
+      <button class="btn-green" onclick="drawCalendar()">Update Calendar View</button>
       <button class="btn-purple" onclick="exportCalendar()">Copy & Download Calendar</button>
     </div>
     <div class="card">
       <h2>Monthly Schedule</h2>
-      <div class="display-area">
-        <canvas id="calCanvas" width="800" height="600"></canvas>
-      </div>
+      <div class="display-area"><canvas id="calCanvas" width="800" height="600"></canvas></div>
     </div>
   </div>
 </div>
@@ -134,37 +122,24 @@ function addTaskRow(container, t='', m='') {
 function generateCharts() {
   const members = [];
   document.querySelectorAll('.member').forEach((m, mIdx) => {
-    const name = m.querySelector('input').value || 'Unknown';
+    const name = m.querySelector('input').value || 'User';
     m.querySelectorAll('.tasks > div').forEach(r => {
-      members.push({ 
-        name, 
-        task: r.querySelector('input').value || 'Task', 
-        mins: parseInt(r.querySelector('.m-in').value)||0,
-        color: COLORS[mIdx % 10]
-      });
+      members.push({ name, task: r.querySelector('input').value || 'Task', mins: parseInt(r.querySelector('.m-in').value)||0, color: COLORS[mIdx % 10] });
     });
   });
-
   const meetingMins = parseInt(document.getElementById('meetingDuration').value) || 1;
-  const totalMins = members.reduce((sum, item) => sum + item.mins, 0);
-  document.getElementById('stat-total-mins').innerText = totalMins;
+  document.getElementById('stat-total-mins').innerText = members.reduce((s, i) => s + i.mins, 0);
   document.getElementById('stat-members').innerText = document.querySelectorAll('.member').length;
 
   if(barChart) barChart.destroy();
   barChart = new Chart(document.getElementById('barChart'), {
-    type: 'bar', 
-    data: {
+    type: 'bar', data: {
       labels: members.map(m => `${m.name}: ${m.task}`),
       datasets: [{ data: members.map(m => m.mins), backgroundColor: members.map(m => m.color) }]
     },
     options: { 
-      indexAxis: 'y', // KEEP HORIZONTAL
-      responsive: true, maintainAspectRatio: false,
-      plugins: { 
-        datalabels: { anchor:'end', align:'right', color:'#000', font:{weight:'900', size:14}, formatter: v => v+'m ('+Math.round((v/meetingMins)*100)+'%)' },
-        legend: {display:false} 
-      },
-      scales: { x: { beginAtZero: true, title: {display:true, text:'Minutes'} } }
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: { datalabels: { anchor:'end', align:'right', color:'#000', font:{weight:'900', size:14}, formatter: v => v+'m ('+Math.round((v/meetingMins)*100)+'%)' }, legend: {display:false} }
     },
     plugins: [ChartDataLabels]
   });
@@ -174,9 +149,7 @@ function generateCharts() {
 function addEventRow(day='', text='') {
   const div = document.createElement('div');
   div.className = 'event-row';
-  div.innerHTML = `Day: <input type="number" class="ev-day" value="${day}" style="width:45px"> 
-                   Label: <input type="text" class="ev-text" value="${text}" placeholder="Event Name" style="width:50%">
-                   <button class="remove" onclick="this.parentElement.remove()">✕</button>`;
+  div.innerHTML = `Day: <input type="number" class="ev-day" value="${day}" style="width:45px"> Label: <input type="text" class="ev-text" value="${text}" style="width:50%"><button class="remove" onclick="this.parentElement.remove()">✕</button>`;
   document.getElementById('eventsArea').appendChild(div);
 }
 
@@ -185,15 +158,14 @@ function drawCalendar(scale = 1) {
   const ctx = canvas.getContext('2d');
   const month = parseInt(document.getElementById('calMonth').value);
   const year = parseInt(document.getElementById('calYear').value);
-  
-  const W = 800 * scale; const H = 600 * scale;
-  canvas.width = W; canvas.height = H;
+  canvas.width = 800 * scale; canvas.height = 600 * scale;
+  const W = canvas.width; const H = canvas.height;
   
   ctx.fillStyle = "white"; ctx.fillRect(0,0,W,H);
   ctx.fillStyle = "#174ea6"; ctx.fillRect(0,0,W, 80 * scale);
   ctx.fillStyle = "white"; ctx.font = `bold ${30 * scale}px Arial`;
   const monthName = new Intl.DateTimeFormat('en-US', {month:'long'}).format(new Date(year, month));
-  ctx.fillText(`${monthName.toUpperCase()} ${year} - ROBOTICS`, 20 * scale, 52 * scale);
+  ctx.fillText(`${monthName.toUpperCase()} ${year} - TEAM SCHEDULE`, 20 * scale, 52 * scale);
 
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -201,9 +173,7 @@ function drawCalendar(scale = 1) {
   const startY = 110 * scale;
 
   const events = {};
-  document.querySelectorAll('.event-row').forEach(row => {
-    events[row.querySelector('.ev-day').value] = row.querySelector('.ev-text').value;
-  });
+  document.querySelectorAll('.event-row').forEach(row => { events[row.querySelector('.ev-day').value] = row.querySelector('.ev-text').value; });
   document.getElementById('stat-events').innerText = Object.keys(events).length;
 
   let curDay = 1;
@@ -216,49 +186,68 @@ function drawCalendar(scale = 1) {
       ctx.fillStyle = "#333"; ctx.font = `bold ${16 * scale}px Arial`;
       ctx.fillText(curDay, x + 10*scale, y + 25*scale);
       if (events[curDay]) {
-        ctx.fillStyle = "#e74c3c"; ctx.fillRect(x + 2, y + rowH - (25*scale), colW - 4, 22*scale);
+        ctx.fillStyle = "#e74c3c"; ctx.fillRect(x + 2, y + rowH - (28*scale), colW - 4, 24*scale);
         ctx.fillStyle = "white"; ctx.font = `bold ${11 * scale}px Arial`;
-        ctx.fillText(events[curDay], x + 5*scale, y + rowH - (10*scale));
+        ctx.fillText(events[curDay], x + 5*scale, y + rowH - (11*scale));
       }
       curDay++;
     }
   }
 }
 
-/* --- EXPORTS --- */
-async function exportHighRes(id, fileName) {
-  const canvas = document.getElementById(id);
-  const scale = 3;
+/* --- THE CLIPBOARD ENGINE --- */
+async function exportTracker() {
+  const canvas = document.getElementById('barChart');
+  const highRes = createHighResCanvas(canvas, 3);
+  handleOutput(highRes, 'VEX_Time_Report');
+}
+
+async function exportCalendar() {
+  // Redraw specifically for export at high scale
   const tempCanvas = document.createElement('canvas');
-  tempCanvas.width = canvas.width * scale; tempCanvas.height = canvas.height * scale;
-  const tCtx = tempCanvas.getContext('2d');
-  tCtx.fillStyle = "white"; tCtx.fillRect(0,0,tempCanvas.width, tempCanvas.height);
-  tCtx.scale(scale, scale); tCtx.drawImage(canvas, 0, 0);
-  copyAndDownload(tempCanvas, fileName);
-}
-
-function exportCalendar() {
+  tempCanvas.width = 2400; // 800 * 3
+  tempCanvas.height = 1800; // 600 * 3
+  
+  // We use the existing draw function but logic to a temp canvas or scale the current one
   drawCalendar(3); 
-  copyAndDownload(document.getElementById('calCanvas'), "Team_Calendar");
-  drawCalendar(1); 
+  const highRes = document.getElementById('calCanvas');
+  await handleOutput(highRes, 'Team_Calendar');
+  drawCalendar(1); // Restore view
 }
 
-async function copyAndDownload(cvs, name) {
+function createHighResCanvas(srcCanvas, scale) {
+  const temp = document.createElement('canvas');
+  temp.width = srcCanvas.width * scale;
+  temp.height = srcCanvas.height * scale;
+  const tCtx = temp.getContext('2d');
+  tCtx.fillStyle = "white";
+  tCtx.fillRect(0,0,temp.width, temp.height);
+  tCtx.scale(scale, scale);
+  tCtx.drawImage(srcCanvas, 0, 0);
+  return temp;
+}
+
+async function handleOutput(canvas, name) {
+  // 1. Download
   const link = document.createElement('a');
   link.download = name + '.png';
-  link.href = cvs.toDataURL('image/png');
+  link.href = canvas.toDataURL('image/png', 1.0);
   link.click();
+
+  // 2. Clipboard (The Fixed Part)
   try {
-    cvs.toBlob(async (blob) => {
-      const item = new ClipboardItem({ "image/png": blob });
-      await navigator.clipboard.write([item]);
-      alert("Success! High-Res PNG saved and copied to clipboard.");
-    });
-  } catch(e) { alert("Image saved! (Clipboard requires HTTPS or Focus)"); }
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+    const data = [new ClipboardItem({ 'image/png': blob })];
+    await navigator.clipboard.write(data);
+    alert("Copied to Clipboard & Downloaded!");
+  } catch (err) {
+    console.error(err);
+    alert("Downloaded! Clipboard copy failed (Note: Some browsers block clipboard on local 'file://' links).");
+  }
 }
 
 addMember("Member 1");
-addEventRow(10, "Design Review");
+addEventRow(10, "Kickoff");
 drawCalendar();
 </script>
 </body>
