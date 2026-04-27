@@ -3,40 +3,50 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>VEX Simplified Time Tracker</title>
+<title>VEX Pro Time Tracker</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
 <style>
-  body{font-family:Arial,sans-serif;background:#f4f6fb;color:#07203a;margin:16px;}
-  h1{margin-bottom:16px;}
-  .container{display:flex;gap:24px;}
-  .card{background:#fff;padding:16px;border-radius:8px;flex:1;box-shadow:0 4px 12px rgba(0,0,0,0.05);}
-  .member{display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap;}
-  .member input{padding:6px;border-radius:6px;border:1px solid #ccc;}
-  .member .remove{background:#e74c3c;color:white;border:none;padding:6px 8px;border-radius:6px;cursor:pointer;}
-  button{background:#174ea6;color:white;border:none;padding:8px 12px;border-radius:6px;cursor:pointer;margin-top:8px;}
-  canvas{margin-top:16px;}
+  body{font-family:'Segoe UI',Arial,sans-serif;background:#f4f6fb;color:#07203a;margin:20px;}
+  .container{display:flex;gap:24px;flex-wrap:wrap;}
+  .card{background:#fff;padding:20px;border-radius:12px;flex:1;min-width:400px;box-shadow:0 4px 12px rgba(0,0,0,0.08);}
+  .member{background:#f9f9f9; padding:12px; border-radius:8px; margin-bottom:15px; border-left:4px solid #174ea6;}
+  .controls{margin-bottom:20px; padding:10px; background:#e8f0fe; border-radius:8px;}
+  input{padding:8px;border-radius:6px;border:1px solid #ccc; margin:2px;}
+  button{background:#174ea6;color:white;border:none;padding:10px 15px;border-radius:6px;cursor:pointer;font-weight:bold;transition:0.2s;}
+  button:hover{background:#0d3a85;}
+  .remove{background:#e74c3c;}
+  .chart-container{position:relative; height:auto; min-height:400px;}
 </style>
 </head>
 <body>
-<h1>VEX Simplified Time Tracker</h1>
+
+<h1>VEX Team Time Analytics</h1>
+
+<div class="controls">
+  <strong>Meeting Settings:</strong> 
+  <input type="number" id="meetingDuration" placeholder="Total Meeting Mins" value="120" style="width:150px"> 
+  <span>mins</span>
+</div>
 
 <div class="container">
   <div class="card">
-    <h2>Members & Assignments</h2>
+    <h2>Data Entry</h2>
     <div id="inputsArea"></div>
+    <hr>
     <button onclick="addMember()">+ Add Member</button>
-    <button onclick="generateCharts()">Generate Charts</button>
-    <button onclick="savePreset()">Save Preset</button>
-    <button onclick="exportPDF()">Export PDF</button>
-    <button onclick="exportBarChart()">Export Bar Chart</button>
+    <button onclick="generateCharts()" style="background:#27ae60;">Update Chart</button>
+    <button onclick="savePreset()">Save Locally</button>
+    <button onclick="exportBarChart()" style="background:#8e44ad;">Download High-Res PNG</button>
   </div>
 
   <div class="card">
-    <h2>Bar Chart</h2>
-    <canvas id="barChart"></canvas>
+    <h2>Activity Breakdown</h2>
+    <div class="chart-container">
+      <canvas id="barChart"></canvas>
+    </div>
   </div>
 </div>
 
@@ -48,10 +58,10 @@ function addMember(name='', assignments=[{task:'', minutes:''}]) {
   const memberDiv = document.createElement('div');
   memberDiv.className='member';
   memberDiv.innerHTML = `
-    <input type="text" placeholder="Member Name" value="${name}" />
-    <div class="assignments"></div>
-    <button onclick="addAssignment(this)">+ Task</button>
-    <button class="remove" onclick="this.parentElement.remove()">✕</button>
+    <input type="text" placeholder="Member Name" value="${name}" style="font-weight:bold; width:80%;" />
+    <button class="remove" onclick="this.parentElement.remove()" style="float:right">✕</button>
+    <div class="assignments" style="margin-top:10px;"></div>
+    <button onclick="addAssignment(this)" style="font-size:12px; background:#666;">+ Task</button>
   `;
   const assignmentsDiv = memberDiv.querySelector('.assignments');
   assignments.forEach(a=>addAssignmentRow(assignmentsDiv, a.task, a.minutes));
@@ -59,17 +69,16 @@ function addMember(name='', assignments=[{task:'', minutes:''}]) {
 }
 
 function addAssignment(btn){
-  const assignmentsDiv = btn.parentElement.querySelector('.assignments');
-  addAssignmentRow(assignmentsDiv);
+  addAssignmentRow(btn.parentElement.querySelector('.assignments'));
 }
 
 function addAssignmentRow(container, task='', minutes=''){
   const row = document.createElement('div');
   row.style.display='flex'; row.style.gap='6px'; row.style.marginTop='4px';
   row.innerHTML = `
-    <input type="text" placeholder="Task" value="${task}" />
-    <input type="number" placeholder="Minutes" min="0" max="120" style="width:80px" value="${minutes}" />
-    <button onclick="this.parentElement.remove()" style="background:#e74c3c;color:white;border:none;padding:4px 6px;border-radius:6px;">✕</button>
+    <input type="text" placeholder="Task" value="${task}" style="flex:2" />
+    <input type="number" placeholder="Mins" class="min-input" style="width:70px" value="${minutes}" />
+    <button onclick="this.parentElement.remove()" style="background:#e74c3c; padding:4px 8px;">✕</button>
   `;
   container.appendChild(row);
 }
@@ -81,7 +90,7 @@ function collectData(){
     const tasks = [];
     m.querySelectorAll('.assignments > div').forEach(r=>{
       const t = r.querySelector('input[type=text]').value || 'Task';
-      const min = parseInt(r.querySelector('input[type=number]').value) || 0;
+      const min = parseInt(r.querySelector('.min-input').value) || 0;
       tasks.push({task:t, minutes:min});
     });
     members.push({name, tasks});
@@ -91,19 +100,20 @@ function collectData(){
 
 function generateCharts(){
   const data = collectData();
+  const totalMeetingMins = parseInt(document.getElementById('meetingDuration').value) || 1;
   const labels = [];
   const minutes = [];
+  
   data.forEach(member=>{
     member.tasks.forEach(t=>{
-      labels.push(`${member.name} → ${t.task}`);
+      labels.push(`${member.name}: ${t.task}`);
       minutes.push(t.minutes);
     });
   });
-  const colors = [];
-  for(let i=0;i<labels.length;i++) colors.push(DEFAULT_COLORS[i%DEFAULT_COLORS.length]);
 
   if(barChart) barChart.destroy();
   const ctx = document.getElementById('barChart').getContext('2d');
+  
   barChart = new Chart(ctx,{
     type:'bar',
     data:{
@@ -111,67 +121,78 @@ function generateCharts(){
       datasets:[{
         label:'Minutes',
         data:minutes,
-        backgroundColor:colors
+        backgroundColor: (context) => DEFAULT_COLORS[context.dataIndex % DEFAULT_COLORS.length],
+        borderRadius: 5
       }]
     },
     options:{
       indexAxis:'y',
+      responsive: true,
+      maintainAspectRatio: false,
       plugins:{
         legend:{display:false},
         datalabels:{
           anchor:'end',
           align:'right',
-          color:'#000',
-          font:{weight:'bold'}
+          formatter: (value) => {
+            const pct = ((value / totalMeetingMins) * 100).toFixed(1);
+            return `${value}m (${pct}%)`;
+          },
+          font:{ weight:'bold', size: 13 }
         }
       },
       scales:{
-        x:{beginAtZero:true},
-        y:{
-          ticks:{
-            font:{
-              weight:'bold',   // makes left-hand labels bold
-              size:12          // you can also increase size for readability
-            }
-          }
-        }
+        x:{ 
+          beginAtZero:true, 
+          max: Math.max(...minutes, totalMeetingMins) + 10,
+          title: { display: true, text: 'Minutes spent' }
+        },
+        y:{ ticks:{ font:{ weight:'bold', size:12 } } }
       }
     },
     plugins: [ChartDataLabels]
   });
 }
 
-
-function exportPDF(){
-  html2canvas(document.querySelector('#barChart')).then(canvas=>{
-    const imgData = canvas.toDataURL('image/png');
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF();
-    pdf.addImage(imgData,'PNG',15,40,180,100);
-    pdf.save('vex_schedule.pdf');
-  });
-}
-
 function exportBarChart(){
-  const a = document.createElement('a');
-  a.href = document.getElementById('barChart').toDataURL('image/png');
-  a.download = 'bar_chart.png';
-  a.click();
+  // To prevent blurriness, we render the canvas to a temporary large size
+  const originalCanvas = document.getElementById('barChart');
+  const tempCanvas = document.createElement('canvas');
+  const ratio = 3; // 3x scale for "Retina" quality
+  tempCanvas.width = originalCanvas.width * ratio;
+  tempCanvas.height = originalCanvas.height * ratio;
+  const tempCtx = tempCanvas.getContext('2d');
+  tempCtx.scale(ratio, ratio);
+  
+  // Re-draw the chart on the big canvas
+  const img = new Image();
+  img.onload = function() {
+    tempCtx.fillStyle = "#ffffff"; // Ensure white background
+    tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+    tempCtx.drawImage(originalCanvas, 0, 0);
+    
+    const a = document.createElement('a');
+    a.href = tempCanvas.toDataURL('image/png', 1.0);
+    a.download = 'HighRes_VEX_Chart.png';
+    a.click();
+  };
+  img.src = originalCanvas.toDataURL();
 }
 
 function savePreset(){
-  const data = collectData();
-  localStorage.setItem('vex_preset', JSON.stringify(data));
-  alert('Preset saved locally!');
+  localStorage.setItem('vex_preset', JSON.stringify(collectData()));
+  localStorage.setItem('vex_meeting_time', document.getElementById('meetingDuration').value);
+  alert('Data saved!');
 }
 
 function loadPreset(){
   const data = JSON.parse(localStorage.getItem('vex_preset') || '[]');
+  document.getElementById('meetingDuration').value = localStorage.getItem('vex_meeting_time') || 120;
   document.getElementById('inputsArea').innerHTML='';
   data.forEach(m=>addMember(m.name,m.tasks));
+  if(data.length > 0) generateCharts();
 }
 
-// initial
 loadPreset();
 </script>
 </body>
