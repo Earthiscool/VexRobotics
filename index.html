@@ -8,50 +8,53 @@
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
 <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 <style>
-  :root { --vex-blue: #07203a; --vex-accent: #174ea6; --vex-red: #e74c3c; --vex-green: #27ae60; --bg: #f4f6fb; }
-  body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--bg); color: #07203a; margin: 0; padding: 15px; }
+  :root { --vex-blue: #174ea6; --vex-navy: #07203a; --vex-red: #e74c3c; --vex-green: #27ae60; --bg: #f4f6fb; }
+  body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: #07203a; margin: 0; padding: 20px; }
   
   /* Tabs Navigation */
-  .tabs-nav { display: flex; gap: 8px; margin-bottom: 15px; border-bottom: 3px solid #ddd; padding-bottom: 10px; }
-  .tab-btn { padding: 10px 18px; font-size: 14px; font-weight: bold; cursor: pointer; border: none; background: #e0e0e0; border-radius: 6px; }
-  .tab-btn.active { background: var(--vex-accent); color: white; }
+  .tabs-nav { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 3px solid #ddd; padding-bottom: 10px; }
+  .tab-btn { padding: 12px 24px; font-size: 16px; font-weight: bold; cursor: pointer; border: none; background: #e0e0e0; border-radius: 8px; transition: 0.3s; }
+  .tab-btn.active { background: var(--vex-blue); color: white; }
 
-  .tab-content { display: none; }
+  /* Dashboard Summary Card */
+  .summary-card { background: var(--vex-blue); color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; display: flex; gap: 40px; box-shadow: 0 4px 15px rgba(23, 78, 166, 0.2); }
+  .stat-val { font-size: 1.8rem; font-weight: bold; display: block; margin-top: 5px; }
+
+  .tab-content { display: none; animation: fadeIn 0.4s; }
   .tab-content.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-  .card { background: #fff; padding: 15px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 20px; }
-
-  /* CONDENSED MATRIX STYLING */
-  #matrixExportArea { padding: 20px; background: white; width: 950px; margin: 0 auto; border: 1px solid #ddd; }
-  .problem-statement { border: 2px solid var(--vex-blue); padding: 10px; margin-bottom: 15px; border-radius: 4px; text-align: left; }
-  .problem-statement label { display: block; font-size: 10px; font-weight: bold; color: var(--vex-accent); text-transform: uppercase; }
-  .problem-statement input { width: 100%; border: none; font-size: 18px; font-weight: bold; outline: none; background: transparent; }
-
-  .matrix-table { width: 100%; border-collapse: collapse; font-size: 11px; table-layout: fixed; border: 2px solid #07203a; }
-  .matrix-table th, .matrix-table td { border: 1px solid #07203a; padding: 6px 2px; text-align: center; }
+  .container { display: flex; gap: 24px; flex-wrap: wrap; }
+  .card { background: #fff; padding: 25px; border-radius: 15px; flex: 1; min-width: 450px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
   
-  .matrix-header { background: var(--vex-blue); color: white; }
-  .crit-name-edit { background: transparent; color: inherit; border: none; font-weight: bold; text-align: center; width: 95%; font-size: 11px; border-bottom: 1px dashed rgba(255,255,255,0.3); margin-bottom: 4px; }
-  
-  /* Matrix Colors */
+  /* CONDENSED SLIDE-READY MATRIX */
+  #matrixExportArea { padding: 20px; background: white; width: 960px; margin: 0 auto; border: 1px solid #eee; }
+  .problem-box { border: 2px solid var(--vex-navy); padding: 12px; margin-bottom: 15px; border-radius: 8px; }
+  .problem-box label { font-size: 10px; font-weight: 900; color: var(--vex-blue); text-transform: uppercase; letter-spacing: 1px; }
+  .problem-box input { width: 100%; border: none; font-size: 1.2rem; font-weight: bold; outline: none; margin-top: 5px; }
+
+  .matrix-table { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; border: 2px solid var(--vex-navy); }
+  .matrix-table th, .matrix-table td { border: 1px solid var(--vex-navy); padding: 8px 2px; text-align: center; }
+  .matrix-header { background: var(--vex-navy); color: white; }
+  .crit-name-edit { background: transparent; color: white; border: none; font-weight: bold; text-align: center; width: 90%; font-size: 12px; border-bottom: 1px dashed rgba(255,255,255,0.4); }
+
   .crit-1 { background: #c8e6c9 !important; color: #1b5e20; } 
   .crit-2 { background: #bbdefb !important; color: #0d47a1; } 
   .crit-3 { background: #fff9c4 !important; color: #856404; } 
   .crit-4 { background: #e1bee7 !important; color: #4a148c; }
-  .total-col { background: #f0f0f0; font-weight: 900; color: #07203a; width: 70px; font-size: 14px; }
+  .total-col { background: #f8f9fa; color: var(--vex-navy); font-weight: 900; font-size: 16px; }
 
-  input[type="number"], input[type="text"] { border-radius: 4px; border: 1px solid #ccc; padding: 4px; }
-  .opt-input { width: 90%; font-weight: bold; border: none; background: transparent; }
-
-  /* Common Components */
-  .entry-row { background: #f9f9f9; padding: 12px; border-radius: 8px; margin-bottom: 10px; border-left: 5px solid var(--vex-accent); position: relative; }
-  .remove-btn { background: var(--vex-red); color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; float: right; font-size: 10px; }
-  .btn-group { display: flex; gap: 10px; margin-top: 15px; }
-  button { color: white; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; }
-  .btn-blue { background: var(--vex-accent); }
+  /* Tracker & Component Styling */
+  .entry-item { background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 12px; border-left: 5px solid var(--vex-blue); position: relative; }
+  input, select { padding: 10px; border-radius: 8px; border: 1px solid #ccc; margin: 5px 0; font-family: inherit; }
+  button { color: white; border: none; padding: 12px 18px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+  .btn-blue { background: var(--vex-blue); }
   .btn-green { background: var(--vex-green); }
-  .btn-purple { background: #8e44ad; }
-  canvas { background: white; border-radius: 8px; border: 1px solid #eee; margin-top: 10px; max-width: 100%; }
+  .btn-purple { background: #8e44ad; width: 100%; margin-top: 15px; font-size: 1.1rem; }
+  .remove-btn { background: var(--vex-red); padding: 5px 10px; font-size: 12px; float: right; }
+
+  .display-area { margin-top: 20px; text-align: center; background: #fff; padding: 15px; border-radius: 12px; border: 1px solid #eee; }
+  canvas { max-width: 100%; height: auto; }
 </style>
 </head>
 <body>
@@ -59,75 +62,96 @@
 <div class="tabs-nav">
   <button class="tab-btn active" onclick="openTab('matrix-tab')">⚖️ Decision Matrix</button>
   <button class="tab-btn" onclick="openTab('tracker-tab')">📊 Time Tracker</button>
-  <button class="tab-btn" onclick="openTab('calendar-tab')">📅 Calendar</button>
-  <button class="tab-btn" onclick="openTab('gantt-tab')">🏗️ Gantt Chart</button>
+  <button class="tab-btn" onclick="openTab('calendar-tab')">📅 Team Calendar</button>
+  <button class="tab-btn" onclick="openTab('gantt-tab')">🏗️ Project Gantt</button>
+</div>
+
+<div class="summary-card">
+  <div><span style="opacity:0.8; font-size: 12px; text-transform: uppercase;">Total Minutes</span><span id="stat-total-mins" class="stat-val">0</span></div>
+  <div><span style="opacity:0.8; font-size: 12px; text-transform: uppercase;">Active Members</span><span id="stat-members" class="stat-val">0</span></div>
+  <div><span style="opacity:0.8; font-size: 12px; text-transform: uppercase;">Key Milestones</span><span id="stat-events" class="stat-val">0</span></div>
 </div>
 
 <div id="matrix-tab" class="tab-content active">
   <div class="card">
     <div id="matrixExportArea">
-        <div class="problem-statement">
-            <label>Design Problem / Decision Goal</label>
-            <input type="text" value="Selecting the Best Intake Mechanism">
+        <div class="problem-box">
+            <label>Engineering Problem / Decision Goal</label>
+            <input type="text" value="Selecting the Optimal Mechanism for High Stakes">
         </div>
         <table class="matrix-table">
           <thead>
             <tr class="matrix-header">
-              <th rowspan="2" style="width: 140px;">OPTIONS</th>
-              <th colspan="2" class="crit-1"><input class="crit-name-edit" value="Reliability"><br>W: <input type="number" id="w1" value="3"></th>
-              <th colspan="2" class="crit-2"><input class="crit-name-edit" value="Speed"><br>W: <input type="number" id="w2" value="2"></th>
-              <th colspan="2" class="crit-3"><input class="crit-name-edit" value="Complexity"><br>W: <input type="number" id="w3" value="5"></th>
-              <th colspan="2" class="crit-4"><input class="crit-name-edit" value="Build Time"><br>W: <input type="number" id="w4" value="4"></th>
+              <th rowspan="2" style="width: 150px;">OPTIONS</th>
+              <th colspan="2" class="crit-1"><input class="crit-name-edit" value="Reliability"><br>W: <input type="number" id="w1" value="3" style="width:35px"></th>
+              <th colspan="2" class="crit-2"><input class="crit-name-edit" value="Complexity"><br>W: <input type="number" id="w2" value="2" style="width:35px"></th>
+              <th colspan="2" class="crit-3"><input class="crit-name-edit" value="Speed"><br>W: <input type="number" id="w3" value="5" style="width:35px"></th>
+              <th colspan="2" class="crit-4"><input class="crit-name-edit" value="Weight"><br>W: <input type="number" id="w4" value="4" style="width:35px"></th>
               <th rowspan="2" class="total-col">TOTAL</th>
             </tr>
-            <tr class="matrix-header" style="font-size: 9px;">
-              <th class="crit-1">Score</th><th class="crit-1">W.S.</th>
-              <th class="crit-2">Score</th><th class="crit-2">W.S.</th>
-              <th class="crit-3">Score</th><th class="crit-3">W.S.</th>
-              <th class="crit-4">Score</th><th class="crit-4">W.S.</th>
+            <tr class="matrix-header" style="font-size: 10px;">
+              <th class="crit-1">SCORE</th><th class="crit-1">W.S.</th>
+              <th class="crit-2">SCORE</th><th class="crit-2">W.S.</th>
+              <th class="crit-3">SCORE</th><th class="crit-3">W.S.</th>
+              <th class="crit-4">SCORE</th><th class="crit-4">W.S.</th>
             </tr>
           </thead>
           <tbody id="matrixBody"></tbody>
         </table>
     </div>
-    <div class="btn-group">
+    <div style="display:flex; gap:10px; margin-top:20px;">
       <button class="btn-blue" onclick="addMatrixRow()">+ Add Option</button>
-      <button class="btn-green" onclick="calculateMatrix()">Calculate Scores</button>
-      <button class="btn-purple" onclick="exportMatrix()">Export for Slides</button>
+      <button class="btn-green" onclick="calculateMatrix()">Calculate Matrix</button>
     </div>
+    <button class="btn-purple" onclick="exportMatrix()">Export Decision Matrix for Notebook</button>
   </div>
 </div>
 
 <div id="tracker-tab" class="tab-content">
-  <div class="card">
-    <h2>Data Entry</h2>
-    <div id="inputsArea"></div>
-    <button class="btn-blue" onclick="addMember()">+ Add Member</button>
-    <button class="btn-green" onclick="generateTrackerChart()">Update Graph</button>
-    <button class="btn-purple" onclick="exportCanvas('barChart', 'Time_Report')">Download Graph</button>
-    <canvas id="barChart" height="400"></canvas>
+  <div class="container">
+    <div class="card">
+      <h2>Data Entry</h2>
+      <div id="inputsArea"></div>
+      <button class="btn-blue" onclick="addMember()">+ Add Member</button>
+      <button class="btn-green" onclick="generateTrackerChart()">Update Visuals</button>
+      <button class="btn-purple" onclick="exportCanvas('barChart', 'VEX_Time_Report')">Download Analytics Graph</button>
+    </div>
+    <div class="card">
+      <h2>Activity Breakdown</h2>
+      <div class="display-area"><canvas id="barChart" height="500"></canvas></div>
+    </div>
   </div>
 </div>
 
 <div id="calendar-tab" class="tab-content">
-  <div class="card">
-    <h2>Monthly Schedule</h2>
-    <div id="eventsArea"></div>
-    <button class="btn-blue" onclick="addEventRow()">+ Add Key Date</button>
-    <button class="btn-green" onclick="drawCalendar()">Update Calendar</button>
-    <button class="btn-purple" onclick="exportCanvas('calCanvas', 'Calendar')">Download Calendar</button>
-    <canvas id="calCanvas" width="800" height="600"></canvas>
+  <div class="container">
+    <div class="card">
+      <h2>Milestone Settings</h2>
+      <div id="eventsArea"></div>
+      <button class="btn-blue" onclick="addEventRow()">+ Add Key Date</button>
+      <button class="btn-green" onclick="drawCalendar()">Refresh Calendar</button>
+      <button class="btn-purple" onclick="exportCalendar()">Download High-Res Calendar</button>
+    </div>
+    <div class="card">
+      <h2>Team Schedule</h2>
+      <div class="display-area"><canvas id="calCanvas" width="800" height="600"></canvas></div>
+    </div>
   </div>
 </div>
 
 <div id="gantt-tab" class="tab-content">
-  <div class="card">
-    <h2>Timeline Planning</h2>
-    <div id="ganttInputs"></div>
-    <button class="btn-blue" onclick="addGanttRow()">+ Add Task</button>
-    <button class="btn-green" onclick="generateGantt()">Update Gantt</button>
-    <button class="btn-purple" onclick="exportCanvas('ganttChart', 'Timeline')">Download Gantt</button>
-    <canvas id="ganttChart" height="400"></canvas>
+  <div class="container">
+    <div class="card">
+      <h2>Task Roadmap</h2>
+      <div id="ganttInputs"></div>
+      <button class="btn-blue" onclick="addGanttRow()">+ Add Task</button>
+      <button class="btn-green" onclick="generateGantt()">Generate Gantt</button>
+      <button class="btn-purple" onclick="exportCanvas('ganttChart', 'Project_Timeline')">Download Timeline</button>
+    </div>
+    <div class="card">
+      <h2>Project Gantt Chart</h2>
+      <div class="display-area"><canvas id="ganttChart" height="500"></canvas></div>
+    </div>
   </div>
 </div>
 
@@ -143,27 +167,27 @@ function openTab(tabId) {
 }
 
 // --- MATRIX LOGIC ---
-function addMatrixRow(name = 'New Mechanism') {
+function addMatrixRow(name = 'New Choice') {
   const tr = document.createElement('tr');
   tr.className = 'matrix-row';
   tr.innerHTML = `
-    <td><input type="text" class="opt-input" value="${name}"></td>
-    <td class="crit-1"><input type="number" class="s1" value="0" min="0" max="5"></td><td class="crit-1 w-score">0</td>
-    <td class="crit-2"><input type="number" class="s2" value="0" min="0" max="5"></td><td class="crit-2 w-score">0</td>
-    <td class="crit-3"><input type="number" class="s3" value="0" min="0" max="5"></td><td class="crit-3 w-score">0</td>
-    <td class="crit-4"><input type="number" class="s4" value="0" min="0" max="5"></td><td class="crit-4 w-score">0</td>
+    <td><input type="text" class="crit-name-edit" style="color:black; width:95%; text-align:left;" value="${name}"></td>
+    <td class="crit-1"><input type="number" class="s1" value="0" min="0" max="5" style="width:35px"></td><td class="crit-1 w-score">0</td>
+    <td class="crit-2"><input type="number" class="s2" value="0" min="0" max="5" style="width:35px"></td><td class="crit-2 w-score">0</td>
+    <td class="crit-3"><input type="number" class="s3" value="0" min="0" max="5" style="width:35px"></td><td class="crit-3 w-score">0</td>
+    <td class="crit-4"><input type="number" class="s4" value="0" min="0" max="5" style="width:35px"></td><td class="crit-4 w-score">0</td>
     <td class="total-col final-total">0</td>
   `;
   document.getElementById('matrixBody').appendChild(tr);
 }
 
 function calculateMatrix() {
-  const weights = [1,2,3,4].map(i => parseInt(document.getElementById('w'+i).value) || 0);
+  const weights = [1,2,3,4].map(i => parseInt(document.getElementById('w'+i).value)||0);
   document.querySelectorAll('.matrix-row').forEach(row => {
     let total = 0;
     const wsDisplays = row.querySelectorAll('.w-score');
     [1,2,3,4].forEach((num, idx) => {
-      const s = parseInt(row.querySelector('.s'+num).value) || 0;
+      const s = parseInt(row.querySelector('.s'+num).value)||0;
       const ws = s * weights[idx];
       wsDisplays[idx].innerText = ws;
       total += ws;
@@ -173,84 +197,94 @@ function calculateMatrix() {
 }
 
 async function exportMatrix() {
-  html2canvas(document.querySelector("#matrixExportArea"), { scale: 2 }).then(canvas => {
-    const link = document.createElement('a');
-    link.download = 'VEX_Decision_Matrix.png';
-    link.href = canvas.toDataURL();
-    link.click();
-  });
+    html2canvas(document.querySelector("#matrixExportArea"), { scale: 2 }).then(canvas => {
+        const link = document.createElement('a');
+        link.download = 'VEX_Decision_Matrix.png';
+        link.href = canvas.toDataURL();
+        link.click();
+    });
 }
 
 // --- TRACKER LOGIC ---
 function addMember() {
-  const div = document.createElement('div'); div.className = 'entry-row';
-  div.innerHTML = `<input type="text" placeholder="Name" class="m-name"> <input type="number" placeholder="Mins" class="m-mins"> <button class="remove-btn" onclick="this.parentElement.remove()">✕</button>`;
+  const div = document.createElement('div'); div.className = 'entry-item';
+  div.innerHTML = `<button class="remove-btn" onclick="this.parentElement.remove()">✕</button>
+    <input type="text" placeholder="Member Name" class="m-name" style="font-weight:bold; width:60%;">
+    <input type="number" placeholder="Minutes" class="m-mins" style="width:25%;">`;
   document.getElementById('inputsArea').appendChild(div);
 }
 
 function generateTrackerChart() {
   const names = [], mins = [];
-  document.querySelectorAll('.entry-row').forEach(row => {
+  document.querySelectorAll('.entry-item').forEach(row => {
     names.push(row.querySelector('.m-name').value || 'User');
-    mins.push(parseInt(row.querySelector('.m-mins').value) || 0);
+    const val = parseInt(row.querySelector('.m-mins').value) || 0;
+    mins.push(val);
   });
+  document.getElementById('stat-total-mins').innerText = mins.reduce((a, b) => a + b, 0);
+  document.getElementById('stat-members').innerText = names.length;
   if(barChart) barChart.destroy();
   barChart = new Chart(document.getElementById('barChart'), {
     type: 'bar',
-    data: { labels: names, datasets: [{ data: mins, backgroundColor: COLORS }] },
-    options: { plugins: { datalabels: { anchor: 'end', align: 'top', formatter: v => v + 'm' } } },
+    data: { labels: names, datasets: [{ label: 'Minutes', data: mins, backgroundColor: COLORS }] },
+    options: { indexAxis: 'y', plugins: { datalabels: { anchor:'end', align:'right', color:'#000', formatter: v => v+'m' } } },
     plugins: [ChartDataLabels]
   });
 }
 
 // --- CALENDAR LOGIC ---
 function addEventRow() {
-  const div = document.createElement('div'); div.className = 'entry-row';
-  div.innerHTML = `Day: <input type="number" class="ev-day" style="width:50px"> Label: <input type="text" class="ev-txt"> <button class="remove-btn" onclick="this.parentElement.remove()">✕</button>`;
+  const div = document.createElement('div'); div.className = 'entry-item';
+  div.innerHTML = `<button class="remove-btn" onclick="this.parentElement.remove()">✕</button>
+    Day: <input type="number" class="ev-day" style="width:50px"> 
+    Label: <input type="text" class="ev-txt" style="width:60%">`;
   document.getElementById('eventsArea').appendChild(div);
 }
 
-function drawCalendar() {
-  const canvas = document.getElementById('calCanvas');
-  const ctx = canvas.getContext('2d');
-  ctx.fillStyle = "white"; ctx.fillRect(0,0,800,600);
-  ctx.fillStyle = "#07203a"; ctx.fillRect(0,0,800,60);
-  ctx.fillStyle = "white"; ctx.font = "bold 24px Arial"; ctx.fillText("PROJECT CALENDAR", 20, 40);
+function drawCalendar(scale = 1) {
+  const canvas = document.getElementById('calCanvas'); const ctx = canvas.getContext('2d');
+  canvas.width = 800 * scale; canvas.height = 600 * scale;
+  ctx.fillStyle = "white"; ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle = "#174ea6"; ctx.fillRect(0,0,canvas.width, 80 * scale);
+  ctx.fillStyle = "white"; ctx.font = `bold ${28 * scale}px Arial`;
+  ctx.fillText("TEAM SCHEDULE", 25 * scale, 50 * scale);
   
   const events = {};
-  document.querySelectorAll('#eventsArea .entry-row').forEach(r => {
+  document.querySelectorAll('#eventsArea .entry-item').forEach(r => {
     events[r.querySelector('.ev-day').value] = r.querySelector('.ev-txt').value;
   });
+  document.getElementById('stat-events').innerText = Object.keys(events).length;
 
-  for(let i=0; i<31; i++) {
-    let x = (i % 7) * 110 + 15, y = Math.floor(i / 7) * 100 + 80;
-    ctx.strokeStyle = "#ddd"; ctx.strokeRect(x, y, 100, 90);
-    ctx.fillStyle = "#333"; ctx.font = "12px Arial"; ctx.fillText(i+1, x+5, y+15);
+  for(let i=0; i<35; i++) {
+    let x = (i % 7) * (110 * scale) + 15 * scale, y = Math.floor(i / 7) * (100 * scale) + 100 * scale;
+    ctx.strokeStyle = "#ddd"; ctx.strokeRect(x, y, 105 * scale, 95 * scale);
+    ctx.fillStyle = "#555"; ctx.font = `${14 * scale}px Arial`; ctx.fillText(i+1 <= 31 ? i+1 : "", x+8*scale, y+20*scale);
     if(events[i+1]) {
-      ctx.fillStyle = "#e74c3c"; ctx.fillRect(x+2, y+50, 96, 20);
-      ctx.fillStyle = "white"; ctx.font = "bold 10px Arial"; ctx.fillText(events[i+1], x+5, y+64);
+      ctx.fillStyle = "#e74c3c"; ctx.fillRect(x+2, y+50*scale, 101*scale, 30*scale);
+      ctx.fillStyle = "white"; ctx.font = `bold ${11 * scale}px Arial`; ctx.fillText(events[i+1], x+5*scale, y+70*scale);
     }
   }
 }
 
 // --- GANTT LOGIC ---
 function addGanttRow() {
-  const div = document.createElement('div'); div.className = 'entry-row';
-  div.innerHTML = `Task: <input type="text" class="g-task"> Start: <input type="number" class="g-start" style="width:40px"> End: <input type="number" class="g-end" style="width:40px">`;
+  const div = document.createElement('div'); div.className = 'entry-item';
+  div.innerHTML = `Task: <input type="text" class="g-task" style="width:40%"> 
+    Day <input type="number" class="g-start" style="width:40px"> to <input type="number" class="g-end" style="width:40px">`;
   document.getElementById('ganttInputs').appendChild(div);
 }
 
 function generateGantt() {
   const labels = [], dataset = [];
-  document.querySelectorAll('#ganttInputs .entry-row').forEach(r => {
-    labels.push(r.querySelector('.g-task').value);
+  document.querySelectorAll('#ganttInputs .entry-item').forEach(r => {
+    labels.push(r.querySelector('.g-task').value || 'Task');
     dataset.push([parseInt(r.querySelector('.g-start').value), parseInt(r.querySelector('.g-end').value)]);
   });
   if(ganttChart) ganttChart.destroy();
   ganttChart = new Chart(document.getElementById('ganttChart'), {
     type: 'bar',
     data: { labels: labels, datasets: [{ data: dataset, backgroundColor: COLORS }] },
-    options: { indexAxis: 'y', plugins: { datalabels: { color: 'white' } } },
+    options: { indexAxis: 'y', plugins: { datalabels: { color: 'white', formatter: v => 'Day ' + v[0] + '-' + v[1] } } },
     plugins: [ChartDataLabels]
   });
 }
@@ -262,9 +296,18 @@ function exportCanvas(id, name) {
   link.click();
 }
 
+function exportCalendar() {
+  drawCalendar(3);
+  const link = document.createElement('a');
+  link.download = 'VEX_Calendar.png';
+  link.href = document.getElementById('calCanvas').toDataURL();
+  link.click();
+  drawCalendar(1);
+}
+
 // Init
-addMatrixRow("Option 1");
-addMatrixRow("Option 2");
+addMatrixRow("Mechanism A"); addMatrixRow("Mechanism B");
+addMember(); addEventRow(); addGanttRow();
 </script>
 </body>
 </html>
