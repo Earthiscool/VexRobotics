@@ -6,6 +6,7 @@
 <title>VEX Analytics & Engineering Pro</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 <style>
   :root { --vex-blue: #174ea6; --vex-red: #e74c3c; --vex-green: #27ae60; --bg: #f4f6fb; }
   body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--bg); color: #07203a; margin: 0; padding: 20px; }
@@ -23,13 +24,17 @@
   .container { display: flex; gap: 24px; flex-wrap: wrap; }
   .card { background: #fff; padding: 20px; border-radius: 12px; flex: 1; min-width: 450px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
   
-  /* Matrix Styling */
-  .matrix-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; }
-  .matrix-table th, .matrix-table td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+  /* Matrix Styling - Darker Colors */
+  .matrix-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; border: 2px solid #07203a; }
+  .matrix-table th, .matrix-table td { border: 1px solid #07203a; padding: 10px; text-align: center; }
   .matrix-header { background: #07203a; color: white; }
-  .crit-1 { background: #f1f8f1; } .crit-2 { background: #f0f4f8; } 
-  .crit-3 { background: #fffdf2; } .crit-4 { background: #f8f1f8; }
-  .total-col { background: #eeeeee; font-weight: bold; }
+  
+  /* High Visibility Criteria Colors */
+  .crit-1 { background: #c8e6c9; color: #1b5e20; } 
+  .crit-2 { background: #bbdefb; color: #0d47a1; } 
+  .crit-3 { background: #fff9c4; color: #856404; } 
+  .crit-4 { background: #e1bee7; color: #4a148c; }
+  .total-col { background: #174ea6; color: white; font-weight: 900; }
 
   .member, .event-row, .gantt-entry { background: #f9f9f9; padding: 12px; border-radius: 8px; margin-bottom: 10px; border-left: 5px solid var(--vex-blue); }
   input, select { padding: 8px; border-radius: 6px; border: 1px solid #ccc; margin: 4px 0; }
@@ -79,15 +84,6 @@
   <div class="container">
     <div class="card">
       <h2>Calendar Settings</h2>
-      <div style="display:flex; gap:10px; margin-bottom:15px;">
-        <select id="calMonth">
-          <option value="0">January</option><option value="1">February</option><option value="2" selected>March</option>
-          <option value="3">April</option><option value="4">May</option><option value="5">June</option>
-          <option value="6">July</option><option value="7">August</option><option value="8">September</option>
-          <option value="9">October</option><option value="10">November</option><option value="11">December</option>
-        </select>
-        <input type="number" id="calYear" value="2024" style="width:80px">
-      </div>
       <div id="eventsArea"></div>
       <button class="btn-blue" onclick="addEventRow()">+ Add Key Date</button>
       <button class="btn-green" onclick="drawCalendar()">Update Calendar View</button>
@@ -119,28 +115,31 @@
 <div id="matrix-tab" class="tab-content">
   <div class="card" style="width: 100%;">
     <h2>Decision Matrix</h2>
-    <table class="matrix-table">
-      <thead>
-        <tr class="matrix-header">
-          <th rowspan="2" style="width: 150px;">OPTIONS<br>(Design Choices)</th>
-          <th colspan="2" class="crit-1">Criterion 1<br>Weight: <input type="number" id="w1" value="3" style="width:40px"></th>
-          <th colspan="2" class="crit-2">Criterion 2<br>Weight: <input type="number" id="w2" value="2" style="width:40px"></th>
-          <th colspan="2" class="crit-3">Criterion 3<br>Weight: <input type="number" id="w3" value="5" style="width:40px"></th>
-          <th colspan="2" class="crit-4">Criterion 4<br>Weight: <input type="number" id="w4" value="4" style="width:40px"></th>
-          <th rowspan="2" class="total-col" style="width: 100px;">TOTAL<br>(Highest is Best)</th>
-        </tr>
-        <tr class="matrix-header">
-          <th class="crit-1">SCORE (1-5)</th> <th class="crit-1">WEIGHTED</th>
-          <th class="crit-2">SCORE (1-5)</th> <th class="crit-2">WEIGHTED</th>
-          <th class="crit-3">SCORE (1-5)</th> <th class="crit-3">WEIGHTED</th>
-          <th class="crit-4">SCORE (1-5)</th> <th class="crit-4">WEIGHTED</th>
-        </tr>
-      </thead>
-      <tbody id="matrixBody"></tbody>
-    </table>
+    <div id="matrixExportArea" style="padding:10px; background:white;">
+        <table class="matrix-table">
+          <thead>
+            <tr class="matrix-header">
+              <th rowspan="2" style="width: 150px;">OPTIONS<br>(Design Choices)</th>
+              <th colspan="2" class="crit-1">Criterion 1<br>Weight: <input type="number" id="w1" value="3" style="width:40px"></th>
+              <th colspan="2" class="crit-2">Criterion 2<br>Weight: <input type="number" id="w2" value="2" style="width:40px"></th>
+              <th colspan="2" class="crit-3">Criterion 3<br>Weight: <input type="number" id="w3" value="5" style="width:40px"></th>
+              <th colspan="2" class="crit-4">Criterion 4<br>Weight: <input type="number" id="w4" value="4" style="width:40px"></th>
+              <th rowspan="2" class="total-col" style="width: 100px;">TOTAL<br>(Highest is Best)</th>
+            </tr>
+            <tr class="matrix-header">
+              <th class="crit-1">SCORE (1-5)</th> <th class="crit-1">WEIGHTED</th>
+              <th class="crit-2">SCORE (1-5)</th> <th class="crit-2">WEIGHTED</th>
+              <th class="crit-3">SCORE (1-5)</th> <th class="crit-3">WEIGHTED</th>
+              <th class="crit-4">SCORE (1-5)</th> <th class="crit-4">WEIGHTED</th>
+            </tr>
+          </thead>
+          <tbody id="matrixBody"></tbody>
+        </table>
+    </div>
     <div style="margin-top: 15px; display: flex; gap: 10px;">
       <button class="btn-blue" onclick="addMatrixRow()">+ Add Option</button>
       <button class="btn-green" onclick="calculateMatrix()">Calculate Matrix</button>
+      <button class="btn-purple" onclick="exportMatrix()">Copy & Download Matrix</button>
     </div>
   </div>
 </div>
@@ -197,13 +196,12 @@ function addEventRow(day='', text='') {
 }
 function drawCalendar(scale = 1) {
   const canvas = document.getElementById('calCanvas'); const ctx = canvas.getContext('2d');
-  const month = parseInt(document.getElementById('calMonth').value); const year = parseInt(document.getElementById('calYear').value);
+  const month = 2; const year = 2024;
   canvas.width = 800 * scale; canvas.height = 600 * scale;
   ctx.fillStyle = "white"; ctx.fillRect(0,0,canvas.width,canvas.height);
   ctx.fillStyle = "#174ea6"; ctx.fillRect(0,0,canvas.width, 80 * scale);
   ctx.fillStyle = "white"; ctx.font = `900 ${32 * scale}px Arial`;
-  const monthName = new Intl.DateTimeFormat('en-US', {month:'long'}).format(new Date(year, month));
-  ctx.fillText(`${monthName.toUpperCase()} ${year}`, 20 * scale, 52 * scale);
+  ctx.fillText(`MARCH 2024`, 20 * scale, 52 * scale);
   const firstDay = new Date(year, month, 1).getDay(); const daysInMonth = new Date(year, month + 1, 0).getDate();
   const colW = canvas.width / 7; const rowH = (canvas.height - 120 * scale) / 5;
   const events = {}; document.querySelectorAll('.event-row').forEach(row => { events[row.querySelector('.ev-day').value] = row.querySelector('.ev-text').value; });
@@ -277,6 +275,12 @@ async function exportCalendar() {
   drawCalendar(3); const canvas = document.getElementById('calCanvas');
   const link = document.createElement('a'); link.download = 'Calendar.png';
   link.href = canvas.toDataURL('image/png'); link.click(); drawCalendar(1);
+}
+async function exportMatrix() {
+    html2canvas(document.querySelector("#matrixExportArea")).then(canvas => {
+        const link = document.createElement('a'); link.download = 'VEX_Decision_Matrix.png';
+        link.href = canvas.toDataURL('image/png'); link.click();
+    });
 }
 
 // Init
