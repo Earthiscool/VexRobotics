@@ -24,7 +24,7 @@
   .container { display: flex; gap: 24px; flex-wrap: wrap; }
   .card { background: #fff; padding: 20px; border-radius: 12px; flex: 1; min-width: 450px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
   
-  /* Matrix Styling - Darker Colors */
+  /* Matrix Styling - Fixed Total Column and Darker Visibility */
   .matrix-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; border: 2px solid #07203a; }
   .matrix-table th, .matrix-table td { border: 1px solid #07203a; padding: 10px; text-align: center; }
   .matrix-header { background: #07203a; color: white; }
@@ -34,7 +34,9 @@
   .crit-2 { background: #bbdefb; color: #0d47a1; } 
   .crit-3 { background: #fff9c4; color: #856404; } 
   .crit-4 { background: #e1bee7; color: #4a148c; }
-  .total-col { background: #174ea6; color: white; font-weight: 900; }
+  
+  /* FIXED: Removed blue background for cleaner look */
+  .total-col { background: #f0f0f0; color: #07203a; font-weight: 900; font-size: 1.1rem; }
 
   .member, .event-row, .gantt-entry { background: #f9f9f9; padding: 12px; border-radius: 8px; margin-bottom: 10px; border-left: 5px solid var(--vex-blue); }
   input, select { padding: 8px; border-radius: 6px; border: 1px solid #ccc; margin: 4px 0; }
@@ -45,7 +47,6 @@
   .remove { background: var(--vex-red); font-size: 11px; padding: 4px 8px; float: right; }
 
   .display-area { margin-top: 20px; text-align: center; background: white; padding: 10px; border-radius: 8px; border: 1px solid #eee; }
-  canvas { max-width: 100%; height: auto; }
 </style>
 </head>
 <body>
@@ -196,20 +197,18 @@ function addEventRow(day='', text='') {
 }
 function drawCalendar(scale = 1) {
   const canvas = document.getElementById('calCanvas'); const ctx = canvas.getContext('2d');
-  const month = 2; const year = 2024;
   canvas.width = 800 * scale; canvas.height = 600 * scale;
   ctx.fillStyle = "white"; ctx.fillRect(0,0,canvas.width,canvas.height);
   ctx.fillStyle = "#174ea6"; ctx.fillRect(0,0,canvas.width, 80 * scale);
   ctx.fillStyle = "white"; ctx.font = `900 ${32 * scale}px Arial`;
   ctx.fillText(`MARCH 2024`, 20 * scale, 52 * scale);
-  const firstDay = new Date(year, month, 1).getDay(); const daysInMonth = new Date(year, month + 1, 0).getDate();
   const colW = canvas.width / 7; const rowH = (canvas.height - 120 * scale) / 5;
   const events = {}; document.querySelectorAll('.event-row').forEach(row => { events[row.querySelector('.ev-day').value] = row.querySelector('.ev-text').value; });
   document.getElementById('stat-events').innerText = Object.keys(events).length;
   let curDay = 1;
   for (let r = 0; r < 6; r++) {
     for (let c = 0; c < 7; c++) {
-      if ((r === 0 && c < firstDay) || curDay > daysInMonth) continue;
+      if (curDay > 31) continue;
       const x = c * colW; const y = (110 * scale) + (r * rowH);
       ctx.strokeStyle = "#ddd"; ctx.strokeRect(x, y, colW, rowH);
       ctx.fillStyle = "#000"; ctx.font = `bold ${16*scale}px Arial`;
@@ -246,8 +245,8 @@ function generateGantt() {
 // MATRIX
 function addMatrixRow(opt = 'Choice') {
   const tr = document.createElement('tr'); tr.className = 'matrix-row';
-  tr.innerHTML = `<td><input type="text" value="${opt}"></td>` + 
-    Array(4).fill(0).map((_,i)=>`<td class="crit-${i+1}"><input type="number" class="s${i+1}" value="0" min="0" max="5"></td><td class="crit-${i+1} w-score">0</td>`).join('') +
+  tr.innerHTML = `<td><input type="text" value="${opt}" style="width:90%"></td>` + 
+    Array(4).fill(0).map((_,i)=>`<td class="crit-${i+1}"><input type="number" class="s${i+1}" value="0" min="0" max="5" style="width:40px"></td><td class="crit-${i+1} w-score">0</td>`).join('') +
     `<td class="total-col final-total">0</td>`;
   document.getElementById('matrixBody').appendChild(tr);
 }
