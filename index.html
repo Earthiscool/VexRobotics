@@ -3,15 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>VEX Analytics & Gantt Pro</title>
+<title>VEX Analytics & Strategy Suite</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/luxon@3.4.4/build/global/luxon.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.3.1/dist/chartjs-adapter-luxon.umd.min.js"></script>
 <style>
-  :root { --vex-blue: #174ea6; --vex-red: #e74c3c; --vex-green: #27ae60; --vex-orange: #f39c12; --bg: #f4f6fb; }
+  :root { --vex-blue: #174ea6; --vex-red: #e74c3c; --vex-green: #27ae60; --vex-purple: #8e44ad; --bg: #f4f6fb; }
   body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--bg); color: #07203a; margin: 0; padding: 20px; }
   
   .tabs-nav { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 3px solid #ddd; padding-bottom: 10px; }
-  .tab-btn { padding: 12px 24px; font-size: 16px; font-weight: bold; cursor: pointer; border: none; background: #e0e0e0; border-radius: 8px; transition: 0.3s; }
+  .tab-btn { padding: 12px 24px; font-size: 16px; font-weight: bold; cursor: pointer; border: none; background: #e0e0e0; border-radius: 8px; transition: 0.2s; }
   .tab-btn.active { background: var(--vex-blue); color: white; }
 
   .summary-card { background: var(--vex-blue); color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; display: flex; gap: 40px; }
@@ -23,16 +25,19 @@
   .container { display: flex; gap: 24px; flex-wrap: wrap; }
   .card { background: #fff; padding: 20px; border-radius: 12px; flex: 1; min-width: 450px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
   
-  .entry-row, .member, .event-row { background: #f9f9f9; padding: 12px; border-radius: 8px; margin-bottom: 10px; border-left: 5px solid var(--vex-blue); }
-  input, select { padding: 8px; border-radius: 6px; border: 1px solid #ccc; margin: 4px 0; }
+  .member, .event-row, .gantt-row { background: #f9f9f9; padding: 12px; border-radius: 8px; margin-bottom: 10px; border-left: 5px solid var(--vex-blue); }
+  .gantt-row { display: grid; grid-template-columns: 1.5fr 1fr 1fr auto; gap: 8px; align-items: end; }
+  
+  input, select { padding: 8px; border-radius: 6px; border: 1px solid #ccc; margin: 4px 0; font-family: inherit; }
+  label { font-size: 11px; font-weight: bold; text-transform: uppercase; color: #666; display: block; }
+  
   button { color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; }
   .btn-blue { background: var(--vex-blue); }
   .btn-green { background: var(--vex-green); }
-  .btn-orange { background: var(--vex-orange); }
-  .btn-purple { background: #8e44ad; width: 100%; margin-top: 10px; font-size: 1.1rem; }
+  .btn-purple { background: var(--vex-purple); width: 100%; margin-top: 10px; font-size: 1.1rem; }
   .remove { background: var(--vex-red); font-size: 11px; padding: 4px 8px; float: right; }
 
-  .display-area { margin-top: 20px; text-align: center; background: white; padding: 10px; border-radius: 8px; border: 1px solid #eee; min-height: 400px; }
+  .display-area { margin-top: 20px; text-align: center; background: white; padding: 10px; border-radius: 8px; border: 1px solid #eee; min-height: 450px; position: relative; }
   canvas { max-width: 100%; height: auto; }
 </style>
 </head>
@@ -45,23 +50,22 @@
 </div>
 
 <div class="summary-card">
-  <div><span style="opacity:0.8">Total Tasks</span><span id="stat-tasks" class="stat-val">0</span></div>
-  <div><span style="opacity:0.8">Active Members</span><span id="stat-members" class="stat-val">0</span></div>
-  <div><span style="opacity:0.8">Timeline Span</span><span id="stat-span" class="stat-val">0 Days</span></div>
+  <div><span style="opacity:0.8">Total Items</span><span id="stat-total" class="stat-val">0</span></div>
+  <div><span style="opacity:0.8">Primary Metric</span><span id="stat-metric" class="stat-val">--</span></div>
 </div>
 
 <div id="tracker-tab" class="tab-content active">
   <div class="container">
     <div class="card">
-      <h2>Data Entry</h2>
-      <div style="margin-bottom:15px;">Meeting Time: <input type="number" id="meetingDuration" value="120" style="width:70px"> mins</div>
+      <h2>Meeting Data</h2>
+      <div style="margin-bottom:15px;">Meeting Goal: <input type="number" id="meetingDuration" value="120" style="width:70px"> mins</div>
       <div id="inputsArea"></div>
       <button class="btn-blue" onclick="addMember()">+ Add Member</button>
       <button class="btn-green" onclick="generateCharts()">Update Graph</button>
-      <button class="btn-purple" onclick="exportTracker()">Copy & Download Graph</button>
+      <button class="btn-purple" onclick="exportCanvas('barChart', 'VEX_Time_Report')">Copy & Download Graph</button>
     </div>
     <div class="card">
-      <h2>Activity Breakdown</h2>
+      <h2>Efficiency Breakdown</h2>
       <div class="display-area"><canvas id="barChart" height="500"></canvas></div>
     </div>
   </div>
@@ -95,16 +99,15 @@
 <div id="gantt-tab" class="tab-content">
   <div class="container">
     <div class="card">
-      <h2>Timeline Planning</h2>
-      <p style="font-size: 0.9rem; color: #666;">Enter Day Numbers (e.g., Day 1 to Day 10)</p>
-      <div id="ganttInputs"></div>
+      <h2>Timeline Roadmap</h2>
+      <div id="ganttInputsArea"></div>
       <button class="btn-blue" onclick="addGanttRow()">+ Add Task</button>
-      <button class="btn-green" onclick="generateGantt()">Update Gantt Chart</button>
-      <button class="btn-purple" onclick="exportGantt()">Copy & Download Gantt</button>
+      <button class="btn-green" onclick="generateGantt()">Update Timeline</button>
+      <button class="btn-purple" onclick="exportCanvas('ganttChart', 'Project_Timeline')">Copy & Download Gantt</button>
     </div>
     <div class="card">
-      <h2>Project Roadmap</h2>
-      <div class="display-area" style="height: 500px;"><canvas id="ganttChart"></canvas></div>
+      <h2>Project Visualization</h2>
+      <div class="display-area"><canvas id="ganttChart" height="500"></canvas></div>
     </div>
   </div>
 </div>
@@ -124,8 +127,8 @@ function openTab(tabId) {
 function addMember(name='', assignments=[{task:'', minutes:''}]) {
   const div = document.createElement('div');
   div.className='member';
-  div.innerHTML = `<input type="text" placeholder="Name" value="${name}" style="font-weight:bold"><button class="remove" onclick="this.parentElement.remove()">✕</button>
-    <div class="tasks"></div><button onclick="addTask(this)" class="btn-blue" style="font-size:10px; padding:4px 8px;">+ Task</button>`;
+  div.innerHTML = `<input type="text" placeholder="Name" value="${name}" style="font-weight:bold; width: 80%"><button class="remove" onclick="this.parentElement.remove()">✕</button>
+    <div class="tasks"></div><button onclick="addTask(this)" class="btn-blue" style="font-size:10px; padding:4px 8px; margin-top:5px">+ Task</button>`;
   const tasksDiv = div.querySelector('.tasks');
   assignments.forEach(a => addTaskRow(tasksDiv, a.task, a.minutes));
   document.getElementById('inputsArea').appendChild(div);
@@ -146,11 +149,9 @@ function generateCharts() {
       members.push({ name, task: r.querySelector('input').value || 'Task', mins: parseInt(r.querySelector('.m-in').value)||0, color: COLORS[mIdx % 10] });
     });
   });
-  
   const meetingMins = parseInt(document.getElementById('meetingDuration').value) || 1;
-  document.getElementById('stat-total-mins').parentElement.firstChild.innerText = "Total Man-Minutes"; 
-  document.getElementById('stat-tasks').innerText = members.reduce((s, i) => s + i.mins, 0);
-  document.getElementById('stat-members').innerText = document.querySelectorAll('.member').length;
+  document.getElementById('stat-total').innerText = members.length;
+  document.getElementById('stat-metric').innerText = members.reduce((s, i) => s + i.mins, 0) + "m";
 
   if(barChart) barChart.destroy();
   barChart = new Chart(document.getElementById('barChart'), {
@@ -161,7 +162,8 @@ function generateCharts() {
     },
     options: { 
       indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-      plugins: { datalabels: { anchor:'end', align:'right', color:'#000', font:{weight:'900'}, formatter: v => v+'m' }, legend: {display:false} }
+      scales: { x: { beginAtZero: true, max: Math.max(...members.map(m => m.mins), 10) * 1.2 } },
+      plugins: { datalabels: { anchor:'end', align:'right', color:'#000', font:{weight:'900'}, formatter: v => v+'m ('+Math.round((v/meetingMins)*100)+'%)' }, legend: {display:false} }
     },
     plugins: [ChartDataLabels]
   });
@@ -174,42 +176,36 @@ function addEventRow(day='', text='') {
   div.innerHTML = `Day: <input type="number" class="ev-day" value="${day}" style="width:45px"> Label: <input type="text" class="ev-text" value="${text}" style="width:50%"><button class="remove" onclick="this.parentElement.remove()">✕</button>`;
   document.getElementById('eventsArea').appendChild(div);
 }
-
 function drawCalendar(scale = 1) {
   const canvas = document.getElementById('calCanvas');
   const ctx = canvas.getContext('2d');
   const month = parseInt(document.getElementById('calMonth').value);
   const year = parseInt(document.getElementById('calYear').value);
   canvas.width = 800 * scale; canvas.height = 600 * scale;
-  const W = canvas.width; const H = canvas.height;
-  
-  ctx.fillStyle = "white"; ctx.fillRect(0,0,W,H);
-  ctx.fillStyle = "#174ea6"; ctx.fillRect(0,0,W, 80 * scale);
+  ctx.fillStyle = "white"; ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle = "#174ea6"; ctx.fillRect(0,0,canvas.width, 80 * scale);
   ctx.fillStyle = "white"; ctx.font = `900 ${32 * scale}px Arial`;
   const monthName = new Intl.DateTimeFormat('en-US', {month:'long'}).format(new Date(year, month));
   ctx.fillText(`${monthName.toUpperCase()} ${year}`, 20 * scale, 52 * scale);
-
+  
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const colW = W / 7; const rowH = (H - 120 * scale) / 5;
-  const startY = 110 * scale;
-
+  const colW = canvas.width / 7; const rowH = (canvas.height - 120 * scale) / 5;
   const events = {};
   document.querySelectorAll('.event-row').forEach(row => { events[row.querySelector('.ev-day').value] = row.querySelector('.ev-text').value; });
 
   let curDay = 1;
   for (let r = 0; r < 6; r++) {
     for (let c = 0; c < 7; c++) {
-      if (r === 0 && c < firstDay) continue;
-      if (curDay > daysInMonth) break;
-      const x = c * colW; const y = startY + (r * rowH);
+      if ((r === 0 && c < firstDay) || curDay > daysInMonth) continue;
+      const x = c * colW; const y = (110 * scale) + (r * rowH);
       ctx.strokeStyle = "#ddd"; ctx.strokeRect(x, y, colW, rowH);
       ctx.fillStyle = "#000"; ctx.font = `bold ${16*scale}px Arial`;
       ctx.fillText(curDay, x + 10*scale, y + 25*scale);
       if (events[curDay]) {
-        ctx.fillStyle = "#e74c3c"; ctx.fillRect(x + 5, y + 35*scale, colW - 10, 20*scale);
-        ctx.fillStyle = "white"; ctx.font = `${10*scale}px Arial`;
-        ctx.fillText(events[curDay], x + 8*scale, y + 48*scale);
+        ctx.fillStyle = "#e74c3c"; ctx.fillRect(x + 5, y + 40*scale, colW - 10, 25*scale);
+        ctx.fillStyle = "white"; ctx.font = `bold ${11*scale}px Arial`;
+        ctx.fillText(events[curDay], x + 10*scale, y + 57*scale);
       }
       curDay++;
     }
@@ -217,71 +213,56 @@ function drawCalendar(scale = 1) {
 }
 
 // --- GANTT LOGIC ---
-function addGanttRow(task='New Task', start=1, end=5) {
+function addGanttRow(task='New Task', start='2024-11-01', end='2024-11-15') {
   const div = document.createElement('div');
-  div.className = 'entry-row';
+  div.className = 'gantt-row';
   div.innerHTML = `
-    <input type="text" class="g-task" value="${task}" style="width:40%" placeholder="Task Name">
-    <input type="number" class="g-start" value="${start}" style="width:45px" placeholder="Start">
-    to
-    <input type="number" class="g-end" value="${end}" style="width:45px" placeholder="End">
+    <div><label>Task Name</label><input type="text" class="g-task" value="${task}"></div>
+    <div><label>Start Date</label><input type="date" class="g-start" value="${start}"></div>
+    <div><label>End Date</label><input type="date" class="g-end" value="${end}"></div>
     <button class="remove" onclick="this.parentElement.remove()">✕</button>
   `;
-  document.getElementById('ganttInputs').appendChild(div);
+  document.getElementById('ganttInputsArea').appendChild(div);
 }
 
 function generateGantt() {
-  const labels = [];
-  const dataset = [];
-  let maxDay = 0;
-
-  document.querySelectorAll('.entry-row').forEach((row, i) => {
+  const labels = []; const dataPoints = [];
+  document.querySelectorAll('.gantt-row').forEach((row, i) => {
     const t = row.querySelector('.g-task').value || 'Task';
-    const s = parseInt(row.querySelector('.g-start').value) || 0;
-    const e = parseInt(row.querySelector('.g-end').value) || 0;
-    labels.push(t);
-    dataset.push([s, e]);
-    if (e > maxDay) maxDay = e;
+    const s = row.querySelector('.g-start').value;
+    const e = row.querySelector('.g-end').value;
+    if(s && e) {
+      labels.push(t);
+      dataPoints.push({ x: [s, e], y: t, color: COLORS[i % 10] });
+    }
   });
 
-  document.getElementById('stat-tasks').innerText = labels.length;
-  document.getElementById('stat-span').innerText = maxDay + " Days";
-
   if(ganttChart) ganttChart.destroy();
-  const ctx = document.getElementById('ganttChart').getContext('2d');
-  
-  ganttChart = new Chart(ctx, {
+  ganttChart = new Chart(document.getElementById('ganttChart'), {
     type: 'bar',
     data: {
       labels: labels,
       datasets: [{
-        label: 'Timeline',
-        data: dataset,
-        backgroundColor: COLORS.map(c => c + 'BB'),
-        borderColor: COLORS,
-        borderWidth: 2,
-        borderRadius: 8,
-        borderSkipped: false,
+        data: dataPoints.map(d => d.x),
+        backgroundColor: dataPoints.map(d => d.color + 'CC'),
+        borderColor: dataPoints.map(d => d.color),
+        borderWidth: 2, borderRadius: 6, borderSkipped: false
       }]
     },
     options: {
-      indexAxis: 'y',
-      responsive: true,
-      maintainAspectRatio: false,
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
       scales: {
-        x: { 
-          position: 'top',
-          title: { display: true, text: 'Project Days', font: { weight: 'bold' } },
-          ticks: { stepSize: 1 }
-        },
-        y: { ticks: { font: { weight: 'bold', size: 13 } } }
+        x: { type: 'time', time: { unit: 'day' }, title: { display: true, text: 'Timeline Schedule' } },
+        y: { grid: { display: false }, ticks: { font: { weight: 'bold' } } }
       },
-      plugins: {
+      plugins: { 
         legend: { display: false },
         datalabels: {
-          color: '#fff',
-          font: { weight: 'bold' },
-          formatter: (value) => `Day ${value[0]} - ${value[1]}`
+          anchor: 'end', align: 'right', color: '#000', font: { weight: 'bold' },
+          formatter: (v) => {
+            const diff = luxon.DateTime.fromISO(v[1]).diff(luxon.DateTime.fromISO(v[0]), 'days').days;
+            return diff + " Days";
+          }
         }
       }
     },
@@ -289,36 +270,33 @@ function generateGantt() {
   });
 }
 
-// --- EXPORT LOGIC ---
-async function handleOutput(canvas, name) {
+// --- SHARED EXPORT ---
+async function exportCanvas(id, fileName) {
+  const canvas = document.getElementById(id);
   const link = document.createElement('a');
-  link.download = name + '.png';
+  link.download = fileName + '.png';
   link.href = canvas.toDataURL('image/png', 1.0);
   link.click();
-  alert("Graph Downloaded Successfully!");
-}
-
-async function exportTracker() {
-  handleOutput(document.getElementById('barChart'), 'VEX_Time_Report');
+  alert("Exported Successfully!");
 }
 
 async function exportCalendar() {
   drawCalendar(3); 
-  handleOutput(document.getElementById('calCanvas'), 'Team_Calendar');
-  drawCalendar(1); 
+  const link = document.createElement('a');
+  link.download = 'VEX_Calendar.png';
+  link.href = document.getElementById('calCanvas').toDataURL('image/png');
+  link.click();
+  drawCalendar(1);
 }
 
-async function exportGantt() {
-  handleOutput(document.getElementById('ganttChart'), 'Project_Timeline');
-}
-
-// Initialize
-addMember("Lead Designer");
-addGanttRow("Chassis Build", 1, 4);
-addGanttRow("Coding Auton", 3, 8);
-addGanttRow("Testing", 7, 12);
+// Initial Data
+addMember("Lead Dev");
+addEventRow(15, "Qualifiers");
+addGanttRow("Build Phase", "2024-11-01", "2024-11-14");
+addGanttRow("Testing Phase", "2024-11-15", "2024-11-25");
 generateGantt();
 drawCalendar();
+generateCharts();
 </script>
 </body>
 </html>
