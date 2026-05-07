@@ -3,17 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>VEX Analytics & Strategy Suite</title>
+<title>VEX Analytics & Calendar Pro</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/luxon@3.4.4/build/global/luxon.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.3.1/dist/chartjs-adapter-luxon.umd.min.js"></script>
 <style>
-  :root { --vex-blue: #174ea6; --vex-red: #e74c3c; --vex-green: #27ae60; --vex-purple: #8e44ad; --bg: #f4f6fb; }
+  :root { --vex-blue: #174ea6; --vex-red: #e74c3c; --vex-green: #27ae60; --bg: #f4f6fb; }
   body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--bg); color: #07203a; margin: 0; padding: 20px; }
   
   .tabs-nav { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 3px solid #ddd; padding-bottom: 10px; }
-  .tab-btn { padding: 12px 24px; font-size: 16px; font-weight: bold; cursor: pointer; border: none; background: #e0e0e0; border-radius: 8px; transition: 0.2s; }
+  .tab-btn { padding: 12px 24px; font-size: 16px; font-weight: bold; cursor: pointer; border: none; background: #e0e0e0; border-radius: 8px; }
   .tab-btn.active { background: var(--vex-blue); color: white; }
 
   .summary-card { background: var(--vex-blue); color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; display: flex; gap: 40px; }
@@ -25,19 +23,15 @@
   .container { display: flex; gap: 24px; flex-wrap: wrap; }
   .card { background: #fff; padding: 20px; border-radius: 12px; flex: 1; min-width: 450px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
   
-  .member, .event-row, .gantt-row { background: #f9f9f9; padding: 12px; border-radius: 8px; margin-bottom: 10px; border-left: 5px solid var(--vex-blue); }
-  .gantt-row { display: grid; grid-template-columns: 1.5fr 1fr 1fr auto; gap: 8px; align-items: end; }
-  
-  input, select { padding: 8px; border-radius: 6px; border: 1px solid #ccc; margin: 4px 0; font-family: inherit; }
-  label { font-size: 11px; font-weight: bold; text-transform: uppercase; color: #666; display: block; }
-  
+  .member, .event-row, .gantt-entry { background: #f9f9f9; padding: 12px; border-radius: 8px; margin-bottom: 10px; border-left: 5px solid var(--vex-blue); }
+  input, select { padding: 8px; border-radius: 6px; border: 1px solid #ccc; margin: 4px 0; }
   button { color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; }
   .btn-blue { background: var(--vex-blue); }
   .btn-green { background: var(--vex-green); }
-  .btn-purple { background: var(--vex-purple); width: 100%; margin-top: 10px; font-size: 1.1rem; }
+  .btn-purple { background: #8e44ad; width: 100%; margin-top: 10px; font-size: 1.1rem; }
   .remove { background: var(--vex-red); font-size: 11px; padding: 4px 8px; float: right; }
 
-  .display-area { margin-top: 20px; text-align: center; background: white; padding: 10px; border-radius: 8px; border: 1px solid #eee; min-height: 450px; position: relative; }
+  .display-area { margin-top: 20px; text-align: center; background: white; padding: 10px; border-radius: 8px; border: 1px solid #eee; }
   canvas { max-width: 100%; height: auto; }
 </style>
 </head>
@@ -50,22 +44,23 @@
 </div>
 
 <div class="summary-card">
-  <div><span style="opacity:0.8">Total Items</span><span id="stat-total" class="stat-val">0</span></div>
-  <div><span style="opacity:0.8">Primary Metric</span><span id="stat-metric" class="stat-val">--</span></div>
+  <div><span style="opacity:0.8">Total Items</span><span id="stat-total-items" class="stat-val">0</span></div>
+  <div><span style="opacity:0.8">Active Members</span><span id="stat-members" class="stat-val">0</span></div>
+  <div><span style="opacity:0.8">Key Dates</span><span id="stat-events" class="stat-val">0</span></div>
 </div>
 
 <div id="tracker-tab" class="tab-content active">
   <div class="container">
     <div class="card">
-      <h2>Meeting Data</h2>
-      <div style="margin-bottom:15px;">Meeting Goal: <input type="number" id="meetingDuration" value="120" style="width:70px"> mins</div>
+      <h2>Data Entry</h2>
+      <div style="margin-bottom:15px;">Meeting Time: <input type="number" id="meetingDuration" value="120" style="width:70px"> mins</div>
       <div id="inputsArea"></div>
       <button class="btn-blue" onclick="addMember()">+ Add Member</button>
       <button class="btn-green" onclick="generateCharts()">Update Graph</button>
       <button class="btn-purple" onclick="exportCanvas('barChart', 'VEX_Time_Report')">Copy & Download Graph</button>
     </div>
     <div class="card">
-      <h2>Efficiency Breakdown</h2>
+      <h2>Activity Breakdown</h2>
       <div class="display-area"><canvas id="barChart" height="500"></canvas></div>
     </div>
   </div>
@@ -99,14 +94,14 @@
 <div id="gantt-tab" class="tab-content">
   <div class="container">
     <div class="card">
-      <h2>Timeline Roadmap</h2>
-      <div id="ganttInputsArea"></div>
+      <h2>Timeline Planning</h2>
+      <div id="ganttInputs"></div>
       <button class="btn-blue" onclick="addGanttRow()">+ Add Task</button>
-      <button class="btn-green" onclick="generateGantt()">Update Timeline</button>
+      <button class="btn-green" onclick="generateGantt()">Update Gantt Chart</button>
       <button class="btn-purple" onclick="exportCanvas('ganttChart', 'Project_Timeline')">Copy & Download Gantt</button>
     </div>
     <div class="card">
-      <h2>Project Visualization</h2>
+      <h2>Project Roadmap</h2>
       <div class="display-area"><canvas id="ganttChart" height="500"></canvas></div>
     </div>
   </div>
@@ -123,12 +118,12 @@ function openTab(tabId) {
   event.currentTarget.classList.add('active');
 }
 
-// --- TRACKER LOGIC ---
+// --- TRACKER ---
 function addMember(name='', assignments=[{task:'', minutes:''}]) {
   const div = document.createElement('div');
   div.className='member';
-  div.innerHTML = `<input type="text" placeholder="Name" value="${name}" style="font-weight:bold; width: 80%"><button class="remove" onclick="this.parentElement.remove()">✕</button>
-    <div class="tasks"></div><button onclick="addTask(this)" class="btn-blue" style="font-size:10px; padding:4px 8px; margin-top:5px">+ Task</button>`;
+  div.innerHTML = `<input type="text" placeholder="Name" value="${name}" style="font-weight:bold"><button class="remove" onclick="this.parentElement.remove()">✕</button>
+    <div class="tasks"></div><button onclick="addTask(this)" class="btn-blue" style="font-size:10px; padding:4px 8px;">+ Task</button>`;
   const tasksDiv = div.querySelector('.tasks');
   assignments.forEach(a => addTaskRow(tasksDiv, a.task, a.minutes));
   document.getElementById('inputsArea').appendChild(div);
@@ -150,8 +145,7 @@ function generateCharts() {
     });
   });
   const meetingMins = parseInt(document.getElementById('meetingDuration').value) || 1;
-  document.getElementById('stat-total').innerText = members.length;
-  document.getElementById('stat-metric').innerText = members.reduce((s, i) => s + i.mins, 0) + "m";
+  document.getElementById('stat-members').innerText = document.querySelectorAll('.member').length;
 
   if(barChart) barChart.destroy();
   barChart = new Chart(document.getElementById('barChart'), {
@@ -162,14 +156,13 @@ function generateCharts() {
     },
     options: { 
       indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-      scales: { x: { beginAtZero: true, max: Math.max(...members.map(m => m.mins), 10) * 1.2 } },
-      plugins: { datalabels: { anchor:'end', align:'right', color:'#000', font:{weight:'900'}, formatter: v => v+'m ('+Math.round((v/meetingMins)*100)+'%)' }, legend: {display:false} }
+      plugins: { datalabels: { anchor:'end', align:'right', color:'#000', font:{weight:'900', size:14}, formatter: v => v+'m' }, legend: {display:false} }
     },
     plugins: [ChartDataLabels]
   });
 }
 
-// --- CALENDAR LOGIC ---
+// --- CALENDAR ---
 function addEventRow(day='', text='') {
   const div = document.createElement('div');
   div.className = 'event-row';
@@ -193,6 +186,7 @@ function drawCalendar(scale = 1) {
   const colW = canvas.width / 7; const rowH = (canvas.height - 120 * scale) / 5;
   const events = {};
   document.querySelectorAll('.event-row').forEach(row => { events[row.querySelector('.ev-day').value] = row.querySelector('.ev-text').value; });
+  document.getElementById('stat-events').innerText = Object.keys(events).length;
 
   let curDay = 1;
   for (let r = 0; r < 6; r++) {
@@ -203,39 +197,39 @@ function drawCalendar(scale = 1) {
       ctx.fillStyle = "#000"; ctx.font = `bold ${16*scale}px Arial`;
       ctx.fillText(curDay, x + 10*scale, y + 25*scale);
       if (events[curDay]) {
-        ctx.fillStyle = "#e74c3c"; ctx.fillRect(x + 5, y + 40*scale, colW - 10, 25*scale);
+        ctx.fillStyle = "#e74c3c"; ctx.fillRect(x + 5, y + rowH - (30*scale), colW - 10, 24*scale);
         ctx.fillStyle = "white"; ctx.font = `bold ${11*scale}px Arial`;
-        ctx.fillText(events[curDay], x + 10*scale, y + 57*scale);
+        ctx.fillText(events[curDay], x + 10*scale, y + rowH - (12*scale));
       }
       curDay++;
     }
   }
 }
 
-// --- GANTT LOGIC ---
-function addGanttRow(task='New Task', start='2024-11-01', end='2024-11-15') {
+// --- GANTT (Original Restored) ---
+function addGanttRow(task='New Task', start=1, end=10) {
   const div = document.createElement('div');
-  div.className = 'gantt-row';
+  div.className = 'gantt-entry';
   div.innerHTML = `
-    <div><label>Task Name</label><input type="text" class="g-task" value="${task}"></div>
-    <div><label>Start Date</label><input type="date" class="g-start" value="${start}"></div>
-    <div><label>End Date</label><input type="date" class="g-end" value="${end}"></div>
+    <input type="text" class="g-task" value="${task}" style="width:40%">
+    Day <input type="number" class="g-start" value="${start}" style="width:45px"> to 
+    Day <input type="number" class="g-end" value="${end}" style="width:45px">
     <button class="remove" onclick="this.parentElement.remove()">✕</button>
   `;
-  document.getElementById('ganttInputsArea').appendChild(div);
+  document.getElementById('ganttInputs').appendChild(div);
 }
 
 function generateGantt() {
-  const labels = []; const dataPoints = [];
-  document.querySelectorAll('.gantt-row').forEach((row, i) => {
+  const labels = [];
+  const dataset = [];
+  document.querySelectorAll('.gantt-entry').forEach((row, i) => {
     const t = row.querySelector('.g-task').value || 'Task';
-    const s = row.querySelector('.g-start').value;
-    const e = row.querySelector('.g-end').value;
-    if(s && e) {
-      labels.push(t);
-      dataPoints.push({ x: [s, e], y: t, color: COLORS[i % 10] });
-    }
+    const s = parseInt(row.querySelector('.g-start').value) || 0;
+    const e = parseInt(row.querySelector('.g-end').value) || 0;
+    labels.push(t);
+    dataset.push([s, e]);
   });
+  document.getElementById('stat-total-items').innerText = labels.length;
 
   if(ganttChart) ganttChart.destroy();
   ganttChart = new Chart(document.getElementById('ganttChart'), {
@@ -243,26 +237,29 @@ function generateGantt() {
     data: {
       labels: labels,
       datasets: [{
-        data: dataPoints.map(d => d.x),
-        backgroundColor: dataPoints.map(d => d.color + 'CC'),
-        borderColor: dataPoints.map(d => d.color),
-        borderWidth: 2, borderRadius: 6, borderSkipped: false
+        data: dataset,
+        backgroundColor: COLORS.map(c => c + 'CC'),
+        borderColor: COLORS,
+        borderWidth: 2,
+        borderRadius: 8,
+        borderSkipped: false
       }]
     },
     options: {
       indexAxis: 'y', responsive: true, maintainAspectRatio: false,
       scales: {
-        x: { type: 'time', time: { unit: 'day' }, title: { display: true, text: 'Timeline Schedule' } },
-        y: { grid: { display: false }, ticks: { font: { weight: 'bold' } } }
+        x: { 
+          beginAtZero: true, 
+          title: { display: true, text: 'Day Timeline', font: { weight: '900', size: 14 } },
+          ticks: { color: '#000', font: { weight: 'bold' } }
+        },
+        y: { ticks: { color: '#000', font: { weight: '900', size: 14 } } }
       },
-      plugins: { 
+      plugins: {
         legend: { display: false },
         datalabels: {
-          anchor: 'end', align: 'right', color: '#000', font: { weight: 'bold' },
-          formatter: (v) => {
-            const diff = luxon.DateTime.fromISO(v[1]).diff(luxon.DateTime.fromISO(v[0]), 'days').days;
-            return diff + " Days";
-          }
+          color: '#fff', font: { weight: '900', size: 12 },
+          formatter: (v) => 'Day ' + v[0] + ' - ' + v[1]
         }
       }
     },
@@ -270,33 +267,32 @@ function generateGantt() {
   });
 }
 
-// --- SHARED EXPORT ---
-async function exportCanvas(id, fileName) {
+// --- EXPORTS ---
+async function exportCanvas(id, name) {
   const canvas = document.getElementById(id);
   const link = document.createElement('a');
-  link.download = fileName + '.png';
+  link.download = name + '.png';
   link.href = canvas.toDataURL('image/png', 1.0);
   link.click();
-  alert("Exported Successfully!");
 }
-
 async function exportCalendar() {
-  drawCalendar(3); 
+  drawCalendar(3);
+  const canvas = document.getElementById('calCanvas');
   const link = document.createElement('a');
   link.download = 'VEX_Calendar.png';
-  link.href = document.getElementById('calCanvas').toDataURL('image/png');
+  link.href = canvas.toDataURL('image/png');
   link.click();
   drawCalendar(1);
 }
 
-// Initial Data
-addMember("Lead Dev");
-addEventRow(15, "Qualifiers");
-addGanttRow("Build Phase", "2024-11-01", "2024-11-14");
-addGanttRow("Testing Phase", "2024-11-15", "2024-11-25");
-generateGantt();
-drawCalendar();
+// Defaults
+addMember("Member 1");
+addEventRow(10, "Kickoff");
+addGanttRow("Chassis Build", 1, 5);
+addGanttRow("Auton Coding", 4, 12);
 generateCharts();
+drawCalendar();
+generateGantt();
 </script>
 </body>
 </html>
