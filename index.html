@@ -42,20 +42,34 @@ input,select{padding:10px;border-radius:8px;border:1px solid #ccc;margin:5px 0;f
 
 .entry-item{background:#f8f9fa;padding:15px;border-radius:10px;margin-bottom:12px;border-left:5px solid var(--vex-blue);}
 
-/* MATRIX */
+/* MATRIX STYLING FIXES */
 #matrixExportArea{padding:20px;background:white;width:960px;margin:0 auto;border:1px solid #eee;}
 .problem-box{border:2px solid var(--vex-navy);padding:12px;margin-bottom:15px;border-radius:8px;}
 .problem-box label{font-size:10px;font-weight:900;color:var(--vex-blue);text-transform:uppercase;}
-.problem-box input{width:100%;border:none;font-size:1.2rem;font-weight:bold;}
+.problem-box input{width:100%;border:none;font-size:1.2rem;font-weight:bold;background:transparent;}
+
 .matrix-table{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed;border:2px solid var(--vex-navy);}
-.matrix-table th,.matrix-table td{border:1px solid var(--vex-navy);padding:8px 2px;text-align:center;}
+.matrix-table th, .matrix-table td{border:1px solid var(--vex-navy);padding:8px 2px;text-align:center;}
 .matrix-header{background:var(--vex-navy);color:white;}
+
+/* Inputs inside the matrix */
+.matrix-table input[type="number"] {
+    background: white !important;
+    color: black !important;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    text-align: center;
+}
+
 .crit-name-edit{background:transparent;color:white;border:none;text-align:center;width:90%;font-weight:bold;}
+/* Keep option names readable */
+.matrix-row .crit-name-edit { color: black !important; background: rgba(255,255,255,0.5) !important; border-radius: 4px;}
+
 .crit-1{background:#a5d6a7!important;}
 .crit-2{background:#90caf9!important;}
 .crit-3{background:#f9e04b!important;}
 .crit-4{background:#ce93d8!important;}
-.total-col{background:#f8f9fa;font-weight:900;}
+.total-col{background:#f8f9fa;font-weight:900; color: var(--vex-navy);}
 
 /* GANTT INPUT GRID */
 .gantt-header{display:grid;grid-template-columns:2fr 130px 130px 160px 40px;gap:8px;font-size:13px;font-weight:bold;color:var(--vex-blue);margin-bottom:8px;padding:0 4px;}
@@ -68,10 +82,10 @@ canvas{max-width:100%;}
 <body>
 
 <div class="tabs-nav">
-  <button class="tab-btn active" onclick="openTab(event,'matrix-tab')">&#9878; Decision Matrix</button>
-  <button class="tab-btn" onclick="openTab(event,'tracker-tab')">&#128202; Time Tracker</button>
-  <button class="tab-btn" onclick="openTab(event,'calendar-tab')">&#128197; Team Calendar</button>
-  <button class="tab-btn" onclick="openTab(event,'gantt-tab')">&#127959; Project Gantt</button>
+  <button class="tab-btn active" onclick="openTab(event,'matrix-tab')">⚖ Decision Matrix</button>
+  <button class="tab-btn" onclick="openTab(event,'tracker-tab')">📊 Time Tracker</button>
+  <button class="tab-btn" onclick="openTab(event,'calendar-tab')">📅 Team Calendar</button>
+  <button class="tab-btn" onclick="openTab(event,'gantt-tab')">🏗 Project Gantt</button>
 </div>
 
 <div class="summary-card">
@@ -80,7 +94,6 @@ canvas{max-width:100%;}
   <div><span>Key Milestones</span><span class="stat-val" id="stat-events">0</span></div>
 </div>
 
-<!-- DECISION MATRIX -->
 <div id="matrix-tab" class="tab-content active">
 <div class="card">
 <div id="matrixExportArea">
@@ -113,7 +126,6 @@ canvas{max-width:100%;}
 </div>
 </div>
 
-<!-- TRACKER -->
 <div id="tracker-tab" class="tab-content">
 <div class="container">
 <div class="card">
@@ -131,7 +143,6 @@ canvas{max-width:100%;}
 </div>
 </div>
 
-<!-- CALENDAR -->
 <div id="calendar-tab" class="tab-content">
 <div class="container">
 <div class="card">
@@ -149,7 +160,6 @@ canvas{max-width:100%;}
 </div>
 </div>
 
-<!-- GANTT -->
 <div id="gantt-tab" class="tab-content">
 
 <div class="card" style="margin-bottom:20px;">
@@ -215,14 +225,14 @@ function addMatrixRow(name){
   if(!name)name='New Choice';
   var tr=document.createElement('tr');
   tr.className='matrix-row';
-  tr.innerHTML='<td><input type="text" class="crit-name-edit" style="color:black;width:95%;" value="'+name+'"></td>'+
-    '<td class="crit-1"><input type="number" class="s1" value="0" min="0" max="5" style="width:35px"></td>'+
+  tr.innerHTML='<td><input type="text" class="crit-name-edit" style="color:black; background:white; width:95%;" value="'+name+'"></td>'+
+    '<td class="crit-1"><input type="number" class="s1" value="0" min="0" max="5" style="width:35px; background:white;"></td>'+
     '<td class="crit-1 w-score">0</td>'+
-    '<td class="crit-2"><input type="number" class="s2" value="0" min="0" max="5" style="width:35px"></td>'+
+    '<td class="crit-2"><input type="number" class="s2" value="0" min="0" max="5" style="width:35px; background:white;"></td>'+
     '<td class="crit-2 w-score">0</td>'+
-    '<td class="crit-3"><input type="number" class="s3" value="0" min="0" max="5" style="width:35px"></td>'+
+    '<td class="crit-3"><input type="number" class="s3" value="0" min="0" max="5" style="width:35px; background:white;"></td>'+
     '<td class="crit-3 w-score">0</td>'+
-    '<td class="crit-4"><input type="number" class="s4" value="0" min="0" max="5" style="width:35px"></td>'+
+    '<td class="crit-4"><input type="number" class="s4" value="0" min="0" max="5" style="width:35px; background:white;"></td>'+
     '<td class="crit-4 w-score">0</td>'+
     '<td class="total-col final-total">0</td>';
   document.getElementById('matrixBody').appendChild(tr);
@@ -304,7 +314,8 @@ function drawCalendar(scale){
   ctx.fillText('TEAM SCHEDULE',25*scale,50*scale);
   var events={};
   document.querySelectorAll('#eventsArea .entry-item').forEach(function(r){
-    events[r.querySelector('.ev-day').value]=r.querySelector('.ev-txt').value;
+    var dayVal = r.querySelector('.ev-day').value;
+    if(dayVal) events[dayVal] = r.querySelector('.ev-txt').value;
   });
   document.getElementById('stat-events').innerText=Object.keys(events).length;
   for(var i=0;i<35;i++){
