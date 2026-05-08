@@ -180,8 +180,8 @@ canvas{max-width:100%;}
 </div>
 
 <div class="card" style="padding:0;overflow:hidden;">
-  <div style="overflow-x:auto;overflow-y:auto;max-height:620px;">
-    <canvas id="ganttCanvas" style="display:block;"></canvas>
+  <div style="overflow-x:auto;overflow-y:auto;max-height:900px;">
+    <canvas id="ganttCanvas" style="display:block;max-width:100%;"></canvas>
   </div>
 </div>
 
@@ -392,7 +392,7 @@ function generateGantt(){
   });
 
   if(ganttTasks.length===0)return;
-  drawGanttCanvas(document.getElementById('ganttCanvas'),1);
+  drawGanttCanvas(document.getElementById('ganttCanvas'),2);
 }
 
 function fmtShort(d){
@@ -400,18 +400,18 @@ function fmtShort(d){
 }
 
 function drawGanttCanvas(canvas,S){
-  var COL_TASK=220*S,COL_DUR=56*S,COL_START=84*S,COL_END=84*S;
+  var COL_TASK=280*S,COL_DUR=64*S,COL_START=100*S,COL_END=100*S;
   var LEFT_W=COL_TASK+COL_DUR+COL_START+COL_END;
-  var ROW_H=30*S;
-  var HEADER_H=52*S;
-  var TITLE_H=36*S;
+  var ROW_H=70*S;
+  var HEADER_H=110*S;
+  var TITLE_H=80*S;
 
   var minDate=new Date(Math.min.apply(null,ganttTasks.map(function(t){return t.start;})));
   var maxDate=new Date(Math.max.apply(null,ganttTasks.map(function(t){return t.end;})));
   minDate.setDate(minDate.getDate()-1);
   maxDate.setDate(maxDate.getDate()+2);
   var totalDays=Math.round((maxDate-minDate)/86400000);
-  var DAY_W=Math.max(18*S,Math.min(36*S,Math.floor(700*S/totalDays)));
+  var DAY_W=Math.max(26*S,Math.min(52*S,Math.floor(900*S/totalDays)));
   var TOTAL_W=LEFT_W+totalDays*DAY_W;
   var TOTAL_H=TITLE_H+HEADER_H+ganttTasks.length*ROW_H+4*S;
 
@@ -442,15 +442,15 @@ function drawGanttCanvas(canvas,S){
   ctx.fillStyle=C_TITLE;
   ctx.fillRect(0,0,TOTAL_W,TITLE_H);
   ctx.fillStyle='#fff';
-  ctx.font='bold '+(14*S)+'px Segoe UI,Arial';
+  ctx.font='bold '+(28*S)+'px Segoe UI,Arial';
   ctx.textBaseline='middle';
   ctx.fillText(document.getElementById('ganttTitle').value||'Project Gantt',12*S,TITLE_H/2);
   var lx=LEFT_W+10*S;
   Object.values(ganttCatColors).forEach(function(entry){
-    ctx.fillStyle=entry.color;ctx.fillRect(lx,TITLE_H/2-5*S,10*S,10*S);
-    ctx.fillStyle='#fff';ctx.font=(10*S)+'px Segoe UI,Arial';
-    ctx.fillText(entry.raw,lx+13*S,TITLE_H/2);
-    lx+=ctx.measureText(entry.raw).width+28*S;
+    ctx.fillStyle=entry.color;ctx.fillRect(lx,TITLE_H/2-8*S,16*S,16*S);
+    ctx.fillStyle='#fff';ctx.font=(18*S)+'px Segoe UI,Arial';
+    ctx.fillText(entry.raw,lx+20*S,TITLE_H/2);
+    lx+=ctx.measureText(entry.raw).width+36*S;
   });
 
   var bodyY=TITLE_H;
@@ -459,7 +459,7 @@ function drawGanttCanvas(canvas,S){
   ctx.fillStyle=C_HDR;
   ctx.fillRect(0,bodyY,TOTAL_W,HEADER_H/2);
   ctx.fillStyle='#fff';
-  ctx.font='bold '+(10*S)+'px Segoe UI,Arial';
+  ctx.font='bold '+(18*S)+'px Segoe UI,Arial';
   ctx.textBaseline='middle';
   var hCols=[
     {l:'Task Name',x:0,w:COL_TASK},
@@ -486,7 +486,7 @@ function drawGanttCanvas(canvas,S){
     ctx.strokeStyle='rgba(255,255,255,0.15)';ctx.lineWidth=1;
     ctx.beginPath();ctx.moveTo(wx,bodyY);ctx.lineTo(wx,bodyY+HEADER_H/2);ctx.stroke();
     var lbl=wkStart.toLocaleDateString('en-US',{month:'short',day:'numeric'});
-    ctx.fillStyle='#fff';ctx.font='bold '+(9*S)+'px Segoe UI,Arial';ctx.textBaseline='middle';
+    ctx.fillStyle='#fff';ctx.font='bold '+(16*S)+'px Segoe UI,Arial';ctx.textBaseline='middle';
     if(ww>ctx.measureText(lbl).width+6*S)ctx.fillText(lbl,wx+4*S,bodyY+HEADER_H/4);
     wx+=ww;
     d=new Date(wkEnd);d.setDate(d.getDate()+1);
@@ -507,7 +507,7 @@ function drawGanttCanvas(canvas,S){
     if(isWknd){ctx.fillStyle='rgba(0,0,0,0.22)';ctx.fillRect(dx,hRow2,DAY_W,HEADER_H/2);}
     if(DAY_W>=18*S){
       ctx.fillStyle=isWknd?'#8099bb':'#dce8ff';
-      ctx.font=(8*S)+'px Segoe UI,Arial';
+      ctx.font=(15*S)+'px Segoe UI,Arial';
       ctx.textBaseline='middle';ctx.textAlign='center';
       ctx.fillText('SMTWTFS'[dow],dx+DAY_W/2,hRow2+HEADER_H/4);
       ctx.textAlign='left';
@@ -519,7 +519,7 @@ function drawGanttCanvas(canvas,S){
   /* Rows */
   var rowsY=bodyY+HEADER_H;
   var todayOff=Math.round((TODAY-minDate)/86400000);
-  var font11=(11*S)+'px Segoe UI,Arial';
+  var font11=(20*S)+'px Segoe UI,Arial';
 
   ganttTasks.forEach(function(t,i){
     var ry=rowsY+i*ROW_H;
@@ -570,7 +570,7 @@ function drawGanttCanvas(canvas,S){
     var beOff=Math.round((t.end-minDate)/86400000);
     var bx=LEFT_W+bsOff*DAY_W;
     var bw=(beOff-bsOff+1)*DAY_W;
-    var bh=ROW_H*0.52;
+    var bh=ROW_H*0.58;
     var by=ry+(ROW_H-bh)/2;
     ctx.shadowColor='rgba(0,0,0,0.2)';ctx.shadowBlur=3*S;ctx.shadowOffsetY=1*S;
     frr(bx+1,by,bw-2,bh,3*S,t.color);
@@ -589,7 +589,7 @@ function drawGanttCanvas(canvas,S){
   if(todayOff>=0&&todayOff<totalDays){
     var tx=LEFT_W+todayOff*DAY_W+DAY_W/2;
     ctx.fillStyle='#dc2626';
-    ctx.font='bold '+(8*S)+'px Segoe UI,Arial';
+    ctx.font='bold '+(15*S)+'px Segoe UI,Arial';
     ctx.textAlign='center';ctx.textBaseline='top';
     ctx.fillText('TODAY',tx,bodyY+2);
     ctx.textAlign='left';
@@ -603,7 +603,7 @@ function drawGanttCanvas(canvas,S){
 function exportGanttPNG(){
   if(ganttTasks.length===0){alert('Generate the Gantt first.');return;}
   var off=document.createElement('canvas');
-  drawGanttCanvas(off,2);
+  drawGanttCanvas(off,3);
   var link=document.createElement('a');
   link.download='VEX_Gantt.png';
   link.href=off.toDataURL('image/png');
@@ -613,7 +613,7 @@ function exportGanttPNG(){
 function copyGanttToClipboard(){
   if(ganttTasks.length===0){alert('Generate the Gantt first.');return;}
   var off=document.createElement('canvas');
-  drawGanttCanvas(off,2);
+  drawGanttCanvas(off,3);
   off.toBlob(function(blob){
     if(navigator.clipboard&&window.ClipboardItem){
       navigator.clipboard.write([new ClipboardItem({'image/png':blob})]).then(function(){
