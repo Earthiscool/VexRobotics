@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>VEX Analytics & Engineering Pro</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
 <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 <style>
@@ -297,7 +298,8 @@ function generateTrackerChart(){
   });
   document.getElementById('stat-total-mins').innerText=mins.reduce((a,b)=>a+b,0);
   document.getElementById('stat-members').innerText=names.length;
-  if(barChart)barChart.destroy();
+  const existingBar=Chart.getChart('barChart');
+  if(existingBar)existingBar.destroy();
   barChart=new Chart(document.getElementById('barChart'),{
     type:'bar',
     data:{labels:names,datasets:[{label:'Minutes Worked',data:mins,backgroundColor:COLORS,borderRadius:8}]},
@@ -450,7 +452,8 @@ function generateGantt(){
   const padMin=minTs-DAY;
   const padMax=maxTs+DAY;
 
-  if(ganttChart)ganttChart.destroy();
+  const existingGantt=Chart.getChart('ganttChart');
+  if(existingGantt)existingGantt.destroy();
 
   ganttChart=new Chart(document.getElementById('ganttChart'),{
     type:'bar',
