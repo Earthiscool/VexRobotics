@@ -59,6 +59,8 @@ input,select{padding:10px;border-radius:8px;border:1px solid #ccc;margin:5px 0;f
     border: 1px solid #ccc;
     border-radius: 4px;
     text-align: center;
+    padding: 4px !important; /* FIX: Overrides the 10px global padding that squished the text */
+    width: 45px !important; /* FIX: Ensures enough width for the number + spinner */
 }
 
 .crit-name-edit{background:transparent;color:white;border:none;text-align:center;width:90%;font-weight:bold;}
@@ -105,10 +107,10 @@ canvas{max-width:100%;}
 <thead>
 <tr class="matrix-header">
   <th rowspan="2" style="width:150px;">OPTIONS</th>
-  <th colspan="2" class="crit-1"><input class="crit-name-edit" value="Reliability"><br>W:<input type="number" id="w1" value="3" style="width:35px"></th>
-  <th colspan="2" class="crit-2"><input class="crit-name-edit" value="Complexity"><br>W:<input type="number" id="w2" value="2" style="width:35px"></th>
-  <th colspan="2" class="crit-3"><input class="crit-name-edit" value="Speed"><br>W:<input type="number" id="w3" value="5" style="width:35px"></th>
-  <th colspan="2" class="crit-4"><input class="crit-name-edit" value="Weight"><br>W:<input type="number" id="w4" value="4" style="width:35px"></th>
+  <th colspan="2" class="crit-1"><input class="crit-name-edit" value="Reliability"><br>W:<input type="number" id="w1" value="3"></th>
+  <th colspan="2" class="crit-2"><input class="crit-name-edit" value="Complexity"><br>W:<input type="number" id="w2" value="2"></th>
+  <th colspan="2" class="crit-3"><input class="crit-name-edit" value="Speed"><br>W:<input type="number" id="w3" value="5"></th>
+  <th colspan="2" class="crit-4"><input class="crit-name-edit" value="Weight"><br>W:<input type="number" id="w4" value="4"></th>
   <th rowspan="2" class="total-col">TOTAL</th>
 </tr>
 <tr class="matrix-header">
@@ -226,13 +228,13 @@ function addMatrixRow(name){
   var tr=document.createElement('tr');
   tr.className='matrix-row';
   tr.innerHTML='<td><input type="text" class="crit-name-edit" style="color:black; background:white; width:95%;" value="'+name+'"></td>'+
-    '<td class="crit-1"><input type="number" class="s1" value="0" min="0" max="5" style="width:35px; background:white;"></td>'+
+    '<td class="crit-1"><input type="number" class="s1" value="0" min="0" max="5"></td>'+
     '<td class="crit-1 w-score">0</td>'+
-    '<td class="crit-2"><input type="number" class="s2" value="0" min="0" max="5" style="width:35px; background:white;"></td>'+
+    '<td class="crit-2"><input type="number" class="s2" value="0" min="0" max="5"></td>'+
     '<td class="crit-2 w-score">0</td>'+
-    '<td class="crit-3"><input type="number" class="s3" value="0" min="0" max="5" style="width:35px; background:white;"></td>'+
+    '<td class="crit-3"><input type="number" class="s3" value="0" min="0" max="5"></td>'+
     '<td class="crit-3 w-score">0</td>'+
-    '<td class="crit-4"><input type="number" class="s4" value="0" min="0" max="5" style="width:35px; background:white;"></td>'+
+    '<td class="crit-4"><input type="number" class="s4" value="0" min="0" max="5"></td>'+
     '<td class="crit-4 w-score">0</td>'+
     '<td class="total-col final-total">0</td>';
   document.getElementById('matrixBody').appendChild(tr);
