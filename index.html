@@ -64,6 +64,11 @@ input,select{padding:10px;border-radius:8px;border:1px solid #ccc;margin:5px 0;f
 }
 
 .crit-name-edit{background:transparent;color:white;border:none;text-align:center;width:90%;font-weight:bold;}
+.category-tools{display:flex;gap:6px;justify-content:center;align-items:center;margin-top:6px;flex-wrap:wrap;}
+.category-tools label{font-size:11px;font-weight:800;color:white;}
+.category-tools input{padding:4px!important;width:56px!important;text-align:center;}
+.delete-category-btn{background:var(--vex-red);color:white;border:none;border-radius:5px;padding:4px 7px;font-size:11px;font-weight:800;cursor:pointer;}
+.option-name{color:black!important;background:white!important;border:1px solid #ccc!important;border-radius:4px;text-align:center;width:95%;font-weight:bold;}
 /* Keep option names readable */
 .matrix-row .crit-name-edit { color: black !important; background: rgba(255,255,255,0.5) !important; border-radius: 4px;}
 
@@ -104,24 +109,13 @@ canvas{max-width:100%;}
   <input type="text" value="Selecting the Optimal Mechanism for High Stakes">
 </div>
 <table class="matrix-table">
-<thead>
-<tr class="matrix-header">
-  <th rowspan="2" style="width:150px;">OPTIONS</th>
-  <th colspan="2" class="crit-1"><input class="crit-name-edit" value="Reliability"><br>W:<input type="number" id="w1" value="3"></th>
-  <th colspan="2" class="crit-2"><input class="crit-name-edit" value="Complexity"><br>W:<input type="number" id="w2" value="2"></th>
-  <th colspan="2" class="crit-3"><input class="crit-name-edit" value="Speed"><br>W:<input type="number" id="w3" value="5"></th>
-  <th colspan="2" class="crit-4"><input class="crit-name-edit" value="Weight"><br>W:<input type="number" id="w4" value="4"></th>
-  <th rowspan="2" class="total-col">TOTAL</th>
-</tr>
-<tr class="matrix-header">
-  <th>S</th><th>WS</th><th>S</th><th>WS</th><th>S</th><th>WS</th><th>S</th><th>WS</th>
-</tr>
-</thead>
+<thead id="matrixHead"></thead>
 <tbody id="matrixBody"></tbody>
 </table>
 </div>
-<div style="display:flex;gap:10px;margin-top:20px;">
+<div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;">
   <button class="btn-blue" onclick="addMatrixRow()">+ Add Option</button>
+  <button class="btn-blue" onclick="addMatrixCategory()">+ Add Category</button>
   <button class="btn-green" onclick="calculateMatrix()">Calculate Matrix</button>
 </div>
 <button class="btn-purple" onclick="exportMatrix()">Export Decision Matrix</button>
@@ -223,39 +217,163 @@ function openTab(event,tabId){
 }
 
 /* MATRIX */
-function addMatrixRow(name){
-  if(!name)name='New Choice';
-  var tr=document.createElement('tr');
-  tr.className='matrix-row';
-  tr.innerHTML='<td><input type="text" class="crit-name-edit" style="color:black; background:white; width:95%;" value="'+name+'"></td>'+
-    '<td class="crit-1"><input type="number" class="s1" value="0" min="0" max="5"></td>'+
-    '<td class="crit-1 w-score">0</td>'+
-    '<td class="crit-2"><input type="number" class="s2" value="0" min="0" max="5"></td>'+
-    '<td class="crit-2 w-score">0</td>'+
-    '<td class="crit-3"><input type="number" class="s3" value="0" min="0" max="5"></td>'+
-    '<td class="crit-3 w-score">0</td>'+
-    '<td class="crit-4"><input type="number" class="s4" value="0" min="0" max="5"></td>'+
-    '<td class="crit-4 w-score">0</td>'+
-    '<td class="total-col final-total">0</td>';
-  document.getElementById('matrixBody').appendChild(tr);
+var matrixCategories=[
+  {name:'Reliability',weight:3,color:'crit-1'},
+  {name:'Complexity',weight:2,color:'crit-2'},
+  {name:'Speed',weight:5,color:'crit-3'},
+  {name:'Weight',weight:4,color:'crit-4'}
+];
+
+var matrixOptions=[];
+
+function matrixColorClass(index){
+  return 'crit-'+((index%4)+1);
 }
 
-function calculateMatrix(){
-  var weights=[1,2,3,4].map(function(i){return parseInt(document.getElementById('w'+i).value)||0;});
-  document.querySelectorAll('.matrix-row').forEach(function(row){
-    var total=0;
-    var ws=row.querySelectorAll('.w-score');
-    [1,2,3,4].forEach(function(num,idx){
-      var s=parseInt(row.querySelector('.s'+num).value)||0;
-      var wval=s*weights[idx];
-      ws[idx].innerText=wval;
-      total+=wval;
+function matrixNumber(value){
+  var n=parseFloat(value);
+  return isNaN(n)?0:n;
+}
+
+function formatMatrixNumber(value){
+  var n=Number(value);
+  if(!isFinite(n))return '0';
+  return Number.isInteger(n)?String(n):String(Math.round(n*100)/100);
+}
+
+function syncMatrixData(){
+  var head=document.getElementById('matrixHead');
+  if(head&&head.children.length){
+    document.querySelectorAll('.matrix-category-name').forEach(function(input){
+      var idx=parseInt(input.dataset.catIndex);
+      if(matrixCategories[idx])matrixCategories[idx].name=input.value||('Category '+(idx+1));
     });
-    row.querySelector('.final-total').innerText=total;
+    document.querySelectorAll('.matrix-weight').forEach(function(input){
+      var idx=parseInt(input.dataset.catIndex);
+      if(matrixCategories[idx])matrixCategories[idx].weight=matrixNumber(input.value);
+    });
+  }
+
+  var rows=document.querySelectorAll('#matrixBody .matrix-row');
+  if(rows.length){
+    matrixOptions=[];
+    rows.forEach(function(row){
+      var nameInput=row.querySelector('.option-name');
+      var scores=[];
+      row.querySelectorAll('.matrix-score').forEach(function(input){
+        scores.push(matrixNumber(input.value));
+      });
+      matrixOptions.push({
+        name:nameInput ? (nameInput.value||'New Choice') : 'New Choice',
+        scores:scores
+      });
+    });
+  }
+}
+
+function renderMatrix(){
+  var head=document.getElementById('matrixHead');
+  var body=document.getElementById('matrixBody');
+  if(!head||!body)return;
+
+  var firstHeader='<tr class="matrix-header">'+
+    '<th rowspan="2" style="width:150px;">OPTIONS</th>';
+
+  matrixCategories.forEach(function(cat,idx){
+    cat.color=matrixColorClass(idx);
+    firstHeader+='<th colspan="2" class="'+cat.color+'">'+
+      '<input class="crit-name-edit matrix-category-name" data-cat-index="'+idx+'" value="'+cat.name.replace(/"/g,'&quot;')+'">'+
+      '<div class="category-tools">'+
+        '<label>W:</label><input type="number" step="any" class="matrix-weight" data-cat-index="'+idx+'" value="'+cat.weight+'">'+
+        '<button type="button" class="delete-category-btn" onclick="deleteMatrixCategory('+idx+')">Delete</button>'+
+      '</div>'+
+    '</th>';
+  });
+
+  firstHeader+='<th rowspan="2" class="total-col">TOTAL</th></tr>';
+
+  var secondHeader='<tr class="matrix-header">';
+  matrixCategories.forEach(function(){
+    secondHeader+='<th>S</th><th>WS</th>';
+  });
+  secondHeader+='</tr>';
+
+  head.innerHTML=firstHeader+secondHeader;
+
+  body.innerHTML='';
+  matrixOptions.forEach(function(option,rowIdx){
+    while(option.scores.length<matrixCategories.length)option.scores.push(0);
+    if(option.scores.length>matrixCategories.length)option.scores=option.scores.slice(0,matrixCategories.length);
+
+    var tr=document.createElement('tr');
+    tr.className='matrix-row';
+    var rowHTML='<td><input type="text" class="option-name" value="'+option.name.replace(/"/g,'&quot;')+'"></td>';
+    matrixCategories.forEach(function(cat,catIdx){
+      var score=option.scores[catIdx]||0;
+      var weighted=score*matrixNumber(cat.weight);
+      rowHTML+='<td class="'+cat.color+'"><input type="number" step="any" class="matrix-score" data-cat-index="'+catIdx+'" value="'+score+'"></td>'+
+        '<td class="'+cat.color+' w-score">'+formatMatrixNumber(weighted)+'</td>';
+    });
+    rowHTML+='<td class="total-col final-total">0</td>';
+    tr.innerHTML=rowHTML;
+    body.appendChild(tr);
+  });
+
+  calculateMatrix(false);
+}
+
+function addMatrixCategory(){
+  syncMatrixData();
+  var next=matrixCategories.length+1;
+  matrixCategories.push({name:'Category '+next,weight:1,color:matrixColorClass(matrixCategories.length)});
+  matrixOptions.forEach(function(option){option.scores.push(0);});
+  renderMatrix();
+}
+
+function deleteMatrixCategory(index){
+  syncMatrixData();
+  if(matrixCategories.length<=1){
+    alert('You need at least one category in the decision matrix.');
+    return;
+  }
+  matrixCategories.splice(index,1);
+  matrixOptions.forEach(function(option){
+    option.scores.splice(index,1);
+  });
+  renderMatrix();
+}
+
+function addMatrixRow(name){
+  syncMatrixData();
+  if(!name)name='New Choice';
+  var scores=matrixCategories.map(function(){return 0;});
+  matrixOptions.push({name:name,scores:scores});
+  renderMatrix();
+}
+
+function calculateMatrix(shouldSync){
+  if(shouldSync!==false)syncMatrixData();
+
+  document.querySelectorAll('#matrixBody .matrix-row').forEach(function(row){
+    var total=0;
+    var scoreInputs=row.querySelectorAll('.matrix-score');
+    var weightedCells=row.querySelectorAll('.w-score');
+
+    scoreInputs.forEach(function(input,idx){
+      var score=matrixNumber(input.value);
+      var weight=matrixCategories[idx]?matrixNumber(matrixCategories[idx].weight):0;
+      var weighted=score*weight;
+      if(weightedCells[idx])weightedCells[idx].innerText=formatMatrixNumber(weighted);
+      total+=weighted;
+    });
+
+    var final=row.querySelector('.final-total');
+    if(final)final.innerText=formatMatrixNumber(total);
   });
 }
 
 function exportMatrix(){
+  calculateMatrix();
   html2canvas(document.querySelector('#matrixExportArea'),{scale:2}).then(function(canvas){
     var link=document.createElement('a');
     link.download='VEX_Decision_Matrix.png';
